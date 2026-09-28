@@ -125,18 +125,12 @@
 				<version>${build-helper-maven-plugin.version}</version>
 				<executions>
 					<execution>
-						<id>add-licence-resource</id>
+						<id>add-license-resource</id>
 						<phase>generate-resources</phase>
 						<goals>
 							<goal>add-resource</goal>
 						</goals>
 						<configuration>
-							<!--
-							  Appended as an extra resource (rather than a <resources> declaration,
-							  which would replace the filtered resources inherited from
-							  spring-boot-starter-parent) so that maven-source-plugin picks the
-							  licence files up into the sources jars.
-							-->
 							<resources>
 								<resource>
 									<directory>${basedir}/..</directory>
@@ -231,18 +225,12 @@
 						<artifactId>maven-resources-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>copy-licence-into-javadoc</id>
+								<id>copy-licenses-into-javadoc</id>
 								<phase>prepare-package</phase>
 								<goals>
 									<goal>copy-resources</goal>
 								</goals>
 								<configuration>
-									<!--
-									  Runs before javadoc:jar (package), so the licence files end up
-									  inside the javadoc jars too. The path below is where the
-									  maven-javadoc-plugin version managed by spring-boot-starter-parent
-									  (3.10.1) writes its output.
-									-->
 									<outputDirectory>${project.build.directory}/reports/apidocs/META-INF</outputDirectory>
 									<resources>
 										<resource>
