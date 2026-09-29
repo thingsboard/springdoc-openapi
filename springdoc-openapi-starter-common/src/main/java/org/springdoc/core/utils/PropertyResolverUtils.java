@@ -24,6 +24,8 @@
  *  
  */
 
+// SPDX-FileCopyrightText: Modifications Copyright ThingsBoard, Inc.
+// SPDX-License-Identifier: Apache-2.0
 package org.springdoc.core.utils;
 
 import java.util.Arrays;
