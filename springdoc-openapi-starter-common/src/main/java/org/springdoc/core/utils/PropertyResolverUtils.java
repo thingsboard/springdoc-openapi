@@ -110,7 +110,7 @@ public class PropertyResolverUtils {
 					result = factory.resolveEmbeddedValue(parameterProperty);
 				}
 				catch (IllegalArgumentException ex) {
-					LOGGER.warn(ex.getMessage());
+					LOGGER.trace(ex.getMessage());
 				}
 		}
 		return result;
