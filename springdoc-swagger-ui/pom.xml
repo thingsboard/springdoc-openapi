@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.thingsboard</groupId>
+        <artifactId>springdoc-openapi</artifactId>
+        <version>3.1.1TB</version>
+    </parent>
+
+    <packaging>jar</packaging>
+    <name>Swagger UI</name>
+    <description>WebJar for Swagger UI</description>
+
+    <artifactId>springdoc-swagger-ui</artifactId>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <upstream.url>https://github.com/thingsboard/swagger-ui/archive/${swagger-ui.version}.zip</upstream.url>
+        <destDir>${project.build.outputDirectory}/META-INF/resources/webjars/swagger-ui/${swagger-ui.version}</destDir>
+        <requirejs>
+            {
+            "paths": { "swagger-ui": "swagger-ui" }
+            }
+        </requirejs>
+    </properties>
+
+    <licenses>
+        <license>
+            <name>Apache 2.0</name>
+            <url>https://github.com/swagger-api/swagger-ui</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>5.1.4</version>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <echo message="download archive" />
+                                <get src="${upstream.url}" dest="${project.build.directory}/${project.artifactId}.zip" />
+                                <echo message="unzip archive" />
+                                <unzip src="${project.build.directory}/${project.artifactId}.zip" dest="${project.build.directory}" />
+                                <echo message="moving resources" />
+                                <move todir="${destDir}">
+                                    <fileset dir="${project.build.directory}/swagger-ui-${swagger-ui.version}/dist" />
+                                </move>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.googlecode.todomap</groupId>
+                <artifactId>maven-jettygzip-plugin</artifactId>
+                <version>0.0.4</version>
+                <configuration>
+                    <webappDirectory>target/classes</webappDirectory>
+                    <outputDirectory>target/classes</outputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+
+</project>

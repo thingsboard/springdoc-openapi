@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.springdoc</groupId>
+	<groupId>org.thingsboard</groupId>
 	<artifactId>springdoc-openapi</artifactId>
-	<version>3.1.1</version>
+	<version>3.1.1TB</version>
 	<packaging>pom</packaging>
 	<name>Spring openapi documentation</name>
 	<description>Spring openapi documentation</description>
@@ -21,6 +21,11 @@
 		</license>
 	</licenses>
 
+	<organization>
+		<name>ThingsBoard</name>
+		<url>https://thingsboard.io/</url>
+	</organization>
+
 	<developers>
 		<developer>
 			<name>Badr NASS LAHSEN</name>
@@ -28,14 +33,21 @@
 			<organization>springdoc</organization>
 			<organizationUrl>https://springdoc.org/</organizationUrl>
 		</developer>
+		<developer>
+			<id>ikulikov</id>
+			<name>Igor Kulikov</name>
+			<email>ikulikov@thingsboard.io</email>
+			<organization>ThingsBoard</organization>
+			<organizationUrl>https://thingsboard.io/</organizationUrl>
+		</developer>
 	</developers>
 
 	<scm>
-		<url>git@github.com:springdoc/springdoc-openapi.git</url>
-		<connection>scm:git:git@github.com:springdoc/springdoc-openapi.git</connection>
-		<developerConnection>scm:git:git@github.com:springdoc/springdoc-openapi.git
+		<url>git@github.com:thingsboard/springdoc-openapi.git</url>
+		<connection>scm:git:git@github.com:thingsboard/springdoc-openapi.git</connection>
+		<developerConnection>scm:git:git@github.com:thingsboard/springdoc-openapi.git
 		</developerConnection>
-		<tag>v3.1.1</tag>
+		<tag>v3.1.1TB</tag>
 	</scm>
 
 	<modules>
@@ -263,18 +275,6 @@
 								</goals>
 							</execution>
 						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.sonatype.central</groupId>
-						<artifactId>central-publishing-maven-plugin</artifactId>
-						<version>${central-publishing-maven-plugin.version}</version>
-						<extensions>true</extensions>
-						<configuration>
-							<publishingServerId>central</publishingServerId>
-							<autoPublish>true</autoPublish>
-							<waitUntil>published</waitUntil>
-							<skipPublishing>${skipPublishing}</skipPublishing>
-						</configuration>
 					</plugin>
 					<plugin>
 						<artifactId>maven-release-plugin</artifactId>
