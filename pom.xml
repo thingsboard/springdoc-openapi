@@ -6,7 +6,7 @@
 	<packaging>pom</packaging>
 	<name>Spring openapi documentation</name>
 	<description>Spring openapi documentation</description>
-	<url>https://springdoc.org/</url>
+	<url>https://github.com/thingsboard/springdoc-openapi</url>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -43,10 +43,9 @@
 	</developers>
 
 	<scm>
-		<url>git@github.com:thingsboard/springdoc-openapi.git</url>
-		<connection>scm:git:git@github.com:thingsboard/springdoc-openapi.git</connection>
-		<developerConnection>scm:git:git@github.com:thingsboard/springdoc-openapi.git
-		</developerConnection>
+		<url>https://github.com/thingsboard/springdoc-openapi</url>
+		<connection>scm:git:https://github.com/thingsboard/springdoc-openapi.git</connection>
+		<developerConnection>scm:git:git@github.com:thingsboard/springdoc-openapi.git</developerConnection>
 		<tag>v3.1.1TB</tag>
 	</scm>
 
@@ -67,6 +66,7 @@
 	</modules>
 
 	<properties>
+		<build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
 		<maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
 		<maven-release-plugin.version>3.1.1</maven-release-plugin.version>
 		<central-publishing-maven-plugin.version>0.11.0
@@ -193,6 +193,32 @@
 		</pluginManagement>
 		<plugins>
 			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>${build-helper-maven-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>add-license-resource</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>add-resource</goal>
+						</goals>
+						<configuration>
+							<resources>
+								<resource>
+									<directory>${basedir}/..</directory>
+									<targetPath>META-INF</targetPath>
+									<includes>
+										<include>LICENSE</include>
+										<include>COPYRIGHT</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
 				<executions>
@@ -262,6 +288,31 @@
 							<sourcepath>src/main/java</sourcepath>
 							<source>17</source>
 						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-resources-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>copy-licenses-into-javadoc</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>copy-resources</goal>
+								</goals>
+								<configuration>
+									<outputDirectory>${project.build.directory}/reports/apidocs/META-INF</outputDirectory>
+									<resources>
+										<resource>
+											<directory>${basedir}/..</directory>
+											<includes>
+												<include>LICENSE</include>
+												<include>COPYRIGHT</include>
+											</includes>
+										</resource>
+									</resources>
+								</configuration>
+							</execution>
+						</executions>
 					</plugin>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
