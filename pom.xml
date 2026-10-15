@@ -367,13 +367,10 @@
 	</repositories>
 
 	<distributionManagement>
-		<snapshotRepository>
-			<id>central</id>
-			<url>https://central.sonatype.com/repository/maven-snapshots/</url>
-		</snapshotRepository>
 		<repository>
-			<id>central</id>
-			<url>https://central.sonatype.com/</url>
+			<id>thingsboard-repo-deploy</id>
+			<name>ThingsBoard Public Repo</name>
+			<url>https://repo.thingsboard.io/artifactory/libs-release-public</url>
 		</repository>
 	</distributionManagement>
 </project>
