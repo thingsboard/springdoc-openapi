@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -24,6 +26,9 @@
 
 package org.springdoc.core.properties;
 
+import java.io.IOException;
+import java.util.LinkedHashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,31 +36,49 @@ import org.apache.commons.lang3.StringUtils;
 import org.springdoc.core.configuration.SpringDocConfiguration;
 import org.springdoc.core.utils.Constants;
 
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
 
+import static org.springdoc.core.utils.Constants.SPRINGDOC_SWAGGER_PREFIX;
 import static org.springdoc.core.utils.Constants.SPRINGDOC_SWAGGER_UI_ENABLED;
+import static org.springframework.util.AntPathMatcher.DEFAULT_PATH_SEPARATOR;
 
 
 /**
  * The type Swagger ui config properties.
+ *
  * @author bnasslahsen
  */
 @Lazy(false)
 @Configuration(proxyBeanMethods = false)
-@ConfigurationProperties(prefix = "springdoc.swagger-ui")
+@AutoConfigureAfter(SpringDocConfiguration.class)
+@ConfigurationProperties(prefix = SPRINGDOC_SWAGGER_PREFIX)
 @ConditionalOnProperty(name = SPRINGDOC_SWAGGER_UI_ENABLED, matchIfMissing = true)
 @ConditionalOnBean(SpringDocConfiguration.class)
-public class SwaggerUiConfigProperties extends AbstractSwaggerUiConfigProperties {
+public class SwaggerUiConfigProperties extends AbstractSwaggerUiConfigProperties implements InitializingBean {
+
+	/**
+	 * The constant SPRINGDOC_CONFIG_PROPERTIES.
+	 */
+	public static final String SPRINGDOC_CONFIG_PROPERTIES = "springdoc.config.properties";
+
+	/**
+	 * The constant SPRINGDOC_SWAGGERUI_VERSION.
+	 */
+	private static final String SPRINGDOC_SWAGGER_VERSION = SPRINGDOC_SWAGGER_PREFIX + ".version";
 
 	/**
 	 * The Disable swagger default url.
 	 */
 	private boolean disableSwaggerDefaultUrl;
-
 
 	/**
 	 * The Swagger ui version.
@@ -75,12 +98,26 @@ public class SwaggerUiConfigProperties extends AbstractSwaggerUiConfigProperties
 	/**
 	 * Whether to generate and serve an OpenAPI document.
 	 */
-	private boolean enabled = true;
+	private boolean enabled;
 
 	/**
 	 * The Use root path.
 	 */
 	private boolean useRootPath;
+
+	@Override
+	public void afterPropertiesSet() {
+		if (StringUtils.isEmpty(version)) {
+			try {
+				Resource resource = new ClassPathResource(DEFAULT_PATH_SEPARATOR + SPRINGDOC_CONFIG_PROPERTIES);
+				Properties props = PropertiesLoaderUtils.loadProperties(resource);
+				setVersion(props.getProperty(SPRINGDOC_SWAGGER_VERSION));
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
 
 	/**
 	 * Gets swagger ui version.
@@ -205,11 +242,12 @@ public class SwaggerUiConfigProperties extends AbstractSwaggerUiConfigProperties
 	 * @return the set
 	 */
 	public Set<SwaggerUrl> cloneUrls() {
-		return this.urls.stream().map(swaggerUrl -> new SwaggerUrl(swaggerUrl.getName(), swaggerUrl.getUrl(), swaggerUrl.getDisplayName())).collect(Collectors.toSet());
+		return this.urls.stream().map(swaggerUrl -> new SwaggerUrl(swaggerUrl.getName(), swaggerUrl.getUrl(), swaggerUrl.getDisplayName())).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	/**
 	 * The type Csrf.
+	 *
 	 * @author bnasslashen
 	 */
 	public static class Csrf {
@@ -378,6 +416,7 @@ public class SwaggerUiConfigProperties extends AbstractSwaggerUiConfigProperties
 
 	/**
 	 * The type Syntax highlight.
+	 *
 	 * @author bnasslashen
 	 */
 	public static class SyntaxHighlight {

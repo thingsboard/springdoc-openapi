@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ package test.org.springdoc.api.v30.app143;
 import test.org.springdoc.api.v30.AbstractSpringDocV30Test;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.autoconfigure.OverrideAutoConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
 /**
@@ -36,6 +37,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = { "management.endpoints.enabled-by-default=true",
 		"springdoc.show-actuator=true", "management.endpoints.web.exposure.exclude=functions"
 })
+@OverrideAutoConfiguration(enabled = true)
 public class SpringDocApp143Test extends AbstractSpringDocV30Test {
 
 	@SpringBootApplication

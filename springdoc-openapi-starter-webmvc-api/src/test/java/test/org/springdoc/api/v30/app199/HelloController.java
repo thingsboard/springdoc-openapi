@@ -2,7 +2,7 @@
  *
  *  *
  *  *  *
- *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *
  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  * you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ package test.org.springdoc.api.v30.app199;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.examples.Example;
 import org.springdoc.core.customizers.OperationCustomizer;
+import org.springdoc.core.providers.ObjectMapperProvider;
 import test.org.springdoc.api.v30.app199.CustomExceptionHandler.MyInternalException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,60 +45,61 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class HelloController {
 
 	@Autowired
-	ObjectMapper defaultObjectMapper;
+	ObjectMapperProvider objectMapperProvider;
 
 	@GetMapping(
-		value = "/first",
-		produces = APPLICATION_JSON_VALUE
+			value = "/first",
+			produces = APPLICATION_JSON_VALUE
 	)
-	public void first() throws MyInternalException {}
+	public void first() throws MyInternalException {
+	}
 
 	@GetMapping(
-		value = "/second",
-		produces = APPLICATION_JSON_VALUE
+			value = "/second",
+			produces = APPLICATION_JSON_VALUE
 	)
-	public void second() throws MyInternalException {}
+	public void second() throws MyInternalException {
+	}
 
 	@Bean
-	public OperationCustomizer operationCustomizer()
-	{
-		return ( Operation operation, HandlerMethod handlerMethod ) ->
+	public OperationCustomizer operationCustomizer() {
+		return (Operation operation, HandlerMethod handlerMethod) ->
 		{
 			final io.swagger.v3.oas.models.media.MediaType mediaType = operation
-				.getResponses()
-				.get( "500" )
-				.getContent()
-				.get( ALL_VALUE );
+					.getResponses()
+					.get("500")
+					.getContent()
+					.get(ALL_VALUE);
 
-			mediaType.setExamples( mediaType.getExamples() != null
-				? mediaType.getExamples()
-				: new LinkedHashMap<>() );
+			mediaType.setExamples(mediaType.getExamples() != null
+					? mediaType.getExamples()
+					: new LinkedHashMap<>());
 
 			final Map<String, Example> examples = mediaType.getExamples();
 
-			switch ( handlerMethod.getMethod().getName() ) {
+			switch (handlerMethod.getMethod().getName()) {
 
-				case "first" :
+				case "first":
 					examples.put(
-						"First case example",
-						new Example().value(
-							defaultObjectMapper.valueToTree(
-								new ErrorDto( "An ErrorDto sample specific to /first endpoint" )
+							"First case example",
+							new Example().value(
+									objectMapperProvider.jsonMapper().valueToTree(
+											new ErrorDto("An ErrorDto sample specific to /first endpoint")
+									)
 							)
-						)
 					);
-				break;
+					break;
 
-				case "second" :
+				case "second":
 					examples.put(
-						"Second case example",
-						new Example().value(
-							defaultObjectMapper.valueToTree(
-								new ErrorDto( "An ErrorDto sample specific to /second endpoint" )
+							"Second case example",
+							new Example().value(
+									objectMapperProvider.jsonMapper().valueToTree(
+											new ErrorDto("An ErrorDto sample specific to /second endpoint")
+									)
 							)
-						)
 					);
-				break;
+					break;
 			}
 
 			return operation;

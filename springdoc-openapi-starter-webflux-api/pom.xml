@@ -1,37 +1,42 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>org.springdoc</groupId>
+		<groupId>org.thingsboard</groupId>
 		<artifactId>springdoc-openapi</artifactId>
-		<version>2.4.1-SNAPSHOT</version>
+		<version>3.1.1TB</version>
 	</parent>
 	<artifactId>springdoc-openapi-starter-webflux-api</artifactId>
+	<name>${project.artifactId}</name>
 	<dependencies>
 		<!-- springdoc-common -->
 		<dependency>
-			<groupId>org.springdoc</groupId>
+			<groupId>org.thingsboard</groupId>
 			<artifactId>springdoc-openapi-starter-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webflux</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-webflux</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-web-server</artifactId>
 		</dependency>
 		<!-- Actuator dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
+			<artifactId>spring-boot-actuator-autoconfigure</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- Test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-reactor-netty</artifactId>
+			<artifactId>spring-boot-starter-webflux-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-resolver-dns-native-macos</artifactId>
-			<classifier>osx-aarch_64</classifier>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-health</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -43,7 +48,7 @@
 				<configuration>
 					<archive>
 						<manifestEntries>
-							<Automatic-Module-Name>org.springdoc.openapi.webflux.core
+							<Automatic-Module-Name>org.thingsboard.openapi.webflux.core
 							</Automatic-Module-Name>
 						</manifestEntries>
 					</archive>

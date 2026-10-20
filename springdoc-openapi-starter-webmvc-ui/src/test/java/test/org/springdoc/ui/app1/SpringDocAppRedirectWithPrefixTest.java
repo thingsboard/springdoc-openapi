@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 package test.org.springdoc.ui.app1;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springdoc.core.utils.Constants;
 import test.org.springdoc.ui.AbstractSpringDocTest;
@@ -32,20 +33,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @TestPropertySource(properties = {
 		"springdoc.swagger-ui.path=/documentation/swagger-ui.html",
-		"springdoc.api-docs.path=/documentation/v3/api-docs",
-		"springdoc.webjars.prefix= /webjars-pref"
+		"springdoc.api-docs.path=/documentation/v3/api-docs"
 })
 public class SpringDocAppRedirectWithPrefixTest extends AbstractSpringDocTest {
 
 	@Test
-	public void shouldRedirectWithPrefix() throws Exception {
+	void shouldRedirectWithPrefix() throws Exception {
 
 		mockMvc.perform(get("/documentation/v3/api-docs/swagger-config"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("validatorUrl", equalTo("")))
 				.andExpect(jsonPath("oauth2RedirectUrl", equalTo("http://localhost/documentation/swagger-ui/oauth2-redirect.html")));
 
-		super.checkJS("results/app1-prefix", "/documentation" + Constants.SWAGGER_INITIALIZER_URL);
+		super.checkJS("results/app1-prefix", "/documentation" + Constants.SWAGGER_INITIALIZER_URL, StringUtils.EMPTY);
 	}
 
 	@SpringBootApplication

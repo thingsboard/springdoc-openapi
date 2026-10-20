@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2023 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -29,19 +31,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.SpecVersion;
 import org.springdoc.core.configuration.SpringDocConfiguration;
 import org.springdoc.core.properties.SpringDocConfigProperties.ApiDocs.OpenApiVersion;
 import org.springdoc.core.utils.Constants;
 
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Role;
 import org.springframework.http.MediaType;
 
-import static org.springdoc.core.utils.Constants.DEFAULT_WEB_JARS_PREFIX_URL;
 import static org.springdoc.core.utils.Constants.SPRINGDOC_ENABLED;
 
 /**
@@ -51,20 +56,17 @@ import static org.springdoc.core.utils.Constants.SPRINGDOC_ENABLED;
  */
 @Lazy(false)
 @Configuration(proxyBeanMethods = false)
+@AutoConfigureAfter(SpringDocConfiguration.class)
 @ConfigurationProperties(prefix = Constants.SPRINGDOC_PREFIX)
 @ConditionalOnProperty(name = SPRINGDOC_ENABLED, matchIfMissing = true)
 @ConditionalOnBean(SpringDocConfiguration.class)
+@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class SpringDocConfigProperties {
 
 	/**
 	 * The Show actuator.
 	 */
 	private boolean showActuator;
-
-	/**
-	 * The Webjars.
-	 */
-	private Webjars webjars = new Webjars();
 
 	/**
 	 * The Api docs.
@@ -167,6 +169,11 @@ public class SpringDocConfigProperties {
 	private boolean showLoginEndpoint;
 
 	/**
+	 * The login endpoint configuration.
+	 */
+	private LoginEndpoint loginEndpoint = new LoginEndpoint();
+
+	/**
 	 * Allow for pre-loading OpenAPI
 	 */
 	private boolean preLoadingEnabled;
@@ -180,6 +187,11 @@ public class SpringDocConfigProperties {
 	 * If set to true, exposes the swagger-ui on the actuator management port.
 	 */
 	private boolean useManagementPort;
+
+	/**
+	 * Allowed locales for i18n.
+	 */
+	private List<String> allowedLocales;
 
 	/**
 	 * The Disable i18n.
@@ -257,21 +269,93 @@ public class SpringDocConfigProperties {
 	private boolean nullableRequestParameterEnabled;
 
 	/**
+	 * The trim kotlin indent.
+	 */
+	private boolean trimKotlinIndent;
+
+	/**
+	 * The Open api.
+	 */
+	private OpenAPI openApi;
+
+	/**
+	 * The Enable extra schemas resolution.
+	 */
+	private boolean enableExtraSchemas;
+
+	/**
+	 * Set explicit-object-schema to true to always include type:
+	 * object in the schema, or to false to omit type: object.
+	 */
+	private boolean explicitObjectSchema;
+
+	/**
+	 * When set to true, schemas without a defined type will be deserialized as an ArbitrarySchema (with no type),
+	 * instead of an ObjectSchema with type: object.
+	 */
+	private boolean useArbitrarySchemas;
+
+	/**
+	 * Is enable additional schemas resolution boolean.
+	 *
+	 * @return the boolean
+	 */
+	public boolean isEnableExtraSchemas() {
+		return enableExtraSchemas;
+	}
+
+	/**
+	 * Sets enable additional schemas resolution.
+	 *
+	 * @param enableExtraSchemas the enable additional schemas resolution
+	 */
+	public void setEnableExtraSchemas(boolean enableExtraSchemas) {
+		this.enableExtraSchemas = enableExtraSchemas;
+	}
+
+	/**
+	 * Gets open api.
+	 *
+	 * @return the open api
+	 */
+	public OpenAPI getOpenApi() {
+		return openApi;
+	}
+
+	/**
+	 * Sets open api.
+	 *
+	 * @param openApi the open api
+	 */
+	public void setOpenApi(OpenAPI openApi) {
+		this.openApi = openApi;
+	}
+
+	/**
+	 * Gets trim kotlin indent.
+	 *
+	 * @return the trim kotlin indent.
+	 */
+	public boolean isTrimKotlinIndent() {
+		return trimKotlinIndent;
+	}
+
+	/**
+	 * Sets trim kotlin indent
+	 *
+	 * @param trimKotlinIndent the trim kotlin indent.
+	 */
+	public void setTrimKotlinIndent(boolean trimKotlinIndent) {
+		this.trimKotlinIndent = trimKotlinIndent;
+	}
+
+	/**
 	 * Gets override with generic response.
 	 *
 	 * @return the override with generic response
 	 */
 	public Boolean getOverrideWithGenericResponse() {
 		return overrideWithGenericResponse;
-	}
-
-	/**
-	 * Sets override with generic response.
-	 *
-	 * @param overrideWithGenericResponse the override with generic response
-	 */
-	public void setOverrideWithGenericResponse(Boolean overrideWithGenericResponse) {
-		this.overrideWithGenericResponse = overrideWithGenericResponse;
 	}
 
 	/**
@@ -490,7 +574,6 @@ public class SpringDocConfigProperties {
 		this.modelConverters = modelConverters;
 	}
 
-
 	/**
 	 * Is use management port boolean.
 	 *
@@ -672,6 +755,24 @@ public class SpringDocConfigProperties {
 	}
 
 	/**
+	 * Gets login endpoint.
+	 *
+	 * @return the login endpoint
+	 */
+	public LoginEndpoint getLoginEndpoint() {
+		return loginEndpoint;
+	}
+
+	/**
+	 * Sets login endpoint.
+	 *
+	 * @param loginEndpoint the login endpoint
+	 */
+	public void setLoginEndpoint(LoginEndpoint loginEndpoint) {
+		this.loginEndpoint = loginEndpoint;
+	}
+
+	/**
 	 * Gets packages to scan.
 	 *
 	 * @return the packages to scan
@@ -705,24 +806,6 @@ public class SpringDocConfigProperties {
 	 */
 	public void setShowActuator(boolean showActuator) {
 		this.showActuator = showActuator;
-	}
-
-	/**
-	 * Gets webjars.
-	 *
-	 * @return the webjars
-	 */
-	public Webjars getWebjars() {
-		return webjars;
-	}
-
-	/**
-	 * Sets webjars.
-	 *
-	 * @param webjars the webjars
-	 */
-	public void setWebjars(Webjars webjars) {
-		this.webjars = webjars;
 	}
 
 	/**
@@ -787,7 +870,6 @@ public class SpringDocConfigProperties {
 	public boolean isCacheDisabled() {
 		return cache.isDisabled();
 	}
-
 
 	/**
 	 * Gets group configs.
@@ -866,6 +948,15 @@ public class SpringDocConfigProperties {
 	 *
 	 * @param overrideWithGenericResponse the override with generic response
 	 */
+	public void setOverrideWithGenericResponse(Boolean overrideWithGenericResponse) {
+		this.overrideWithGenericResponse = overrideWithGenericResponse;
+	}
+
+	/**
+	 * Sets override with generic response.
+	 *
+	 * @param overrideWithGenericResponse the override with generic response
+	 */
 	public void setOverrideWithGenericResponse(boolean overrideWithGenericResponse) {
 		this.overrideWithGenericResponse = overrideWithGenericResponse;
 	}
@@ -937,6 +1028,24 @@ public class SpringDocConfigProperties {
 	}
 
 	/**
+	 * List of allowed locales for i18n.
+	 *
+	 * @return the allowed locales
+	 */
+	public List<String> getAllowedLocales() {
+		return allowedLocales;
+	}
+
+	/**
+	 * Sets allowed locales for i18n.
+	 *
+	 * @param allowedLocales the allowed locales
+	 */
+	public void setAllowedLocales(List<String> allowedLocales) {
+		this.allowedLocales = allowedLocales;
+	}
+
+	/**
 	 * Is disable i 18 n boolean.
 	 *
 	 * @return the boolean
@@ -964,15 +1073,6 @@ public class SpringDocConfigProperties {
 	}
 
 	/**
-	 * locale list to pre-loading.
-	 *
-	 * @return the Locales
-	 */
-	public List<String> getPreLoadingLocales() {
-		return preLoadingLocales;
-	}
-
-	/**
 	 * Sets locale list to pre-loading.
 	 *
 	 * @param preLoadingEnabled the Locales
@@ -982,12 +1082,115 @@ public class SpringDocConfigProperties {
 	}
 
 	/**
+	 * locale list to pre-loading.
+	 *
+	 * @return the Locales
+	 */
+	public List<String> getPreLoadingLocales() {
+		return preLoadingLocales;
+	}
+
+	/**
 	 * Sets pre loading locales.
 	 *
 	 * @param preLoadingLocales the pre loading locales
 	 */
 	public void setPreLoadingLocales(List<String> preLoadingLocales) {
 		this.preLoadingLocales = preLoadingLocales;
+	}
+
+	/**
+	 * Is show oauth 2 endpoints boolean.
+	 *
+	 * @return the boolean
+	 */
+	public boolean isShowOauth2Endpoints() {
+		return showOauth2Endpoints;
+	}
+
+	/**
+	 * Sets show oauth 2 endpoints.
+	 *
+	 * @param showOauth2Endpoints the show oauth 2 endpoints
+	 */
+	public void setShowOauth2Endpoints(boolean showOauth2Endpoints) {
+		this.showOauth2Endpoints = showOauth2Endpoints;
+	}
+
+	/**
+	 * Gets spec version.
+	 *
+	 * @return the spec version
+	 */
+	public SpecVersion getSpecVersion() {
+		if (apiDocs.getVersion() == OpenApiVersion.OPENAPI_3_1)
+			return SpecVersion.V31;
+		return SpecVersion.V30;
+	}
+
+	/**
+	 * Is openapi 31 boolean.
+	 *
+	 * @return the boolean
+	 */
+	public boolean isOpenapi31() {
+		if (apiDocs.getVersion() == OpenApiVersion.OPENAPI_3_1)
+			return true;
+		return false;
+	}
+
+	/**
+	 * Is enable default api docs boolean.
+	 *
+	 * @return the boolean
+	 */
+	public boolean isEnableDefaultApiDocs() {
+		return enableDefaultApiDocs;
+	}
+
+	/**
+	 * Sets enable default api docs.
+	 *
+	 * @param enableDefaultApiDocs the enable default api docs
+	 */
+	public void setEnableDefaultApiDocs(boolean enableDefaultApiDocs) {
+		this.enableDefaultApiDocs = enableDefaultApiDocs;
+	}
+
+	/**
+	 * Is explicit object schema boolean.
+	 *
+	 * @return the boolean
+	 */
+	public boolean isExplicitObjectSchema() {
+		return explicitObjectSchema;
+	}
+
+	/**
+	 * Sets explicit object schema.
+	 *
+	 * @param explicitObjectSchema the explicit object schema
+	 */
+	public void setExplicitObjectSchema(boolean explicitObjectSchema) {
+		this.explicitObjectSchema = explicitObjectSchema;
+	}
+
+	/**
+	 * Is use arbitrary schemas boolean.
+	 *
+	 * @return the boolean
+	 */
+	public boolean isUseArbitrarySchemas() {
+		return useArbitrarySchemas;
+	}
+
+	/**
+	 * Sets use arbitrary schemas.
+	 *
+	 * @param useArbitrarySchemas the use arbitrary schemas
+	 */
+	public void setUseArbitrarySchemas(boolean useArbitrarySchemas) {
+		this.useArbitrarySchemas = useArbitrarySchemas;
 	}
 
 	/**
@@ -1192,36 +1395,6 @@ public class SpringDocConfigProperties {
 	}
 
 	/**
-	 * The type Webjars.
-	 *
-	 * @author bnasslahsen
-	 */
-	public static class Webjars {
-		/**
-		 * The Prefix.
-		 */
-		private String prefix = DEFAULT_WEB_JARS_PREFIX_URL;
-
-		/**
-		 * Gets prefix.
-		 *
-		 * @return the prefix
-		 */
-		public String getPrefix() {
-			return prefix;
-		}
-
-		/**
-		 * Sets prefix.
-		 *
-		 * @param prefix the prefix
-		 */
-		public void setPrefix(String prefix) {
-			this.prefix = prefix;
-		}
-	}
-
-	/**
 	 * The type Api docs.
 	 *
 	 * @author bnasslahsen
@@ -1235,7 +1408,7 @@ public class SpringDocConfigProperties {
 		/**
 		 * Whether to generate and serve an OpenAPI document.
 		 */
-		private boolean enabled = true;
+		private boolean enabled;
 
 		/**
 		 * The Resolve schema properties.
@@ -1255,7 +1428,7 @@ public class SpringDocConfigProperties {
 		/**
 		 * The OpenAPI version.
 		 */
-		private OpenApiVersion version;
+		private OpenApiVersion version = OpenApiVersion.OPENAPI_3_1;
 
 		/**
 		 * Gets path.
@@ -1348,6 +1521,24 @@ public class SpringDocConfigProperties {
 		}
 
 		/**
+		 * Is resolve extensions properties boolean.
+		 *
+		 * @return the boolean
+		 */
+		public boolean isResolveExtensionsProperties() {
+			return resolveExtensionsProperties;
+		}
+
+		/**
+		 * Sets resolve extensions properties.
+		 *
+		 * @param resolveExtensionsProperties the resolve extensions properties
+		 */
+		public void setResolveExtensionsProperties(boolean resolveExtensionsProperties) {
+			this.resolveExtensionsProperties = resolveExtensionsProperties;
+		}
+
+		/**
 		 * The enum OpenApiVersion.
 		 */
 		public enum OpenApiVersion {
@@ -1383,24 +1574,6 @@ public class SpringDocConfigProperties {
 				return version;
 			}
 		}
-
-		/**
-		 * Is resolve extensions properties boolean.
-		 *
-		 * @return the boolean
-		 */
-		public boolean isResolveExtensionsProperties() {
-			return resolveExtensionsProperties;
-		}
-
-		/**
-		 * Sets resolve extensions properties.
-		 *
-		 * @param resolveExtensionsProperties the resolve extensions properties
-		 */
-		public void setResolveExtensionsProperties(boolean resolveExtensionsProperties) {
-			this.resolveExtensionsProperties = resolveExtensionsProperties;
-		}
 	}
 
 	/**
@@ -1433,17 +1606,32 @@ public class SpringDocConfigProperties {
 		}
 	}
 
-
 	/**
 	 * The type Cache.
 	 *
 	 * @author bnasslahsen
 	 */
 	public static class Cache {
+
+		/**
+		 * The default maximum number of cached OpenAPI documents.
+		 */
+		private static final int DEFAULT_MAX_ENTRIES = 100;
+
 		/**
 		 * The Disabled.
 		 */
 		private boolean disabled;
+
+		/**
+		 * The maximum number of OpenAPI descriptions to keep in the cache. One entry is
+		 * cached per requested locale, so this bounds the memory an untrusted caller can
+		 * make the cache consume by varying the {@code Accept-Language} header. The least
+		 * recently used entry is evicted once the limit is reached. A non-positive value
+		 * falls back to the default of {@value #DEFAULT_MAX_ENTRIES} rather than meaning
+		 * "unlimited". Narrow it further with {@code springdoc.allowed-locales}.
+		 */
+		private int maxEntries = DEFAULT_MAX_ENTRIES;
 
 		/**
 		 * Is disabled boolean.
@@ -1461,6 +1649,24 @@ public class SpringDocConfigProperties {
 		 */
 		public void setDisabled(boolean disabled) {
 			this.disabled = disabled;
+		}
+
+		/**
+		 * Gets max entries.
+		 *
+		 * @return the max entries
+		 */
+		public int getMaxEntries() {
+			return maxEntries;
+		}
+
+		/**
+		 * Sets max entries.
+		 *
+		 * @param maxEntries the max entries
+		 */
+		public void setMaxEntries(int maxEntries) {
+			this.maxEntries = maxEntries > 0 ? maxEntries : DEFAULT_MAX_ENTRIES;
 		}
 	}
 
@@ -1515,6 +1721,12 @@ public class SpringDocConfigProperties {
 		 * The Display name.
 		 */
 		private String displayName;
+
+		/**
+		 * The Open api.
+		 */
+		private OpenAPI openApi;
+
 
 		/**
 		 * Instantiates a new Group config.
@@ -1712,6 +1924,24 @@ public class SpringDocConfigProperties {
 			this.displayName = displayName;
 		}
 
+		/**
+		 * Gets open api.
+		 *
+		 * @return the open api
+		 */
+		public OpenAPI getOpenApi() {
+			return openApi;
+		}
+
+		/**
+		 * Sets open api.
+		 *
+		 * @param openApi the open api
+		 */
+		public void setOpenApi(OpenAPI openApi) {
+			this.openApi = openApi;
+		}
+
 		@Override
 		public boolean equals(Object o) {
 			if (this == o) return true;
@@ -1726,62 +1956,60 @@ public class SpringDocConfigProperties {
 		}
 	}
 
-
 	/**
-	 * Is show oauth 2 endpoints boolean.
-	 *
-	 * @return the boolean
+	 * The type Login endpoint.
+	 * <p>
+	 * These settings only take effect when the login endpoint is exposed, i.e. when
+	 * {@code springdoc.show-login-endpoint=true}. Otherwise, they are ignored.
 	 */
-	public boolean isShowOauth2Endpoints() {
-		return showOauth2Endpoints;
-	}
+	public static class LoginEndpoint {
 
-	/**
-	 * Sets show oauth 2 endpoints.
-	 *
-	 * @param showOauth2Endpoints the show oauth 2 endpoints
-	 */
-	public void setShowOauth2Endpoints(boolean showOauth2Endpoints) {
-		this.showOauth2Endpoints = showOauth2Endpoints;
-	}
+		/**
+		 * The example value for the username field of the login request body.
+		 * Only applied when {@code springdoc.show-login-endpoint=true}.
+		 */
+		private String usernameExample;
 
-	/**
-	 * Gets spec version.
-	 *
-	 * @return the spec version
-	 */
-	public SpecVersion getSpecVersion() {
-		if (apiDocs.getVersion() == OpenApiVersion.OPENAPI_3_1)
-			return SpecVersion.V31;
-		return SpecVersion.V30;
-	}
+		/**
+		 * The example value for the password field of the login request body.
+		 * Only applied when {@code springdoc.show-login-endpoint=true}.
+		 */
+		private String passwordExample;
 
-	/**
-	 * Is openapi 31 boolean.
-	 *
-	 * @return the boolean
-	 */
-	public boolean isOpenapi31() {
-		if (apiDocs.getVersion() == OpenApiVersion.OPENAPI_3_1)
-			return true;
-		return false;
-	}
+		/**
+		 * Gets username example.
+		 *
+		 * @return the username example
+		 */
+		public String getUsernameExample() {
+			return usernameExample;
+		}
 
-	/**
-	 * Is enable default api docs boolean.
-	 *
-	 * @return the boolean
-	 */
-	public boolean isEnableDefaultApiDocs() {
-		return enableDefaultApiDocs;
-	}
+		/**
+		 * Sets username example.
+		 *
+		 * @param usernameExample the username example
+		 */
+		public void setUsernameExample(String usernameExample) {
+			this.usernameExample = usernameExample;
+		}
 
-	/**
-	 * Sets enable default api docs.
-	 *
-	 * @param enableDefaultApiDocs the enable default api docs
-	 */
-	public void setEnableDefaultApiDocs(boolean enableDefaultApiDocs) {
-		this.enableDefaultApiDocs = enableDefaultApiDocs;
+		/**
+		 * Gets password example.
+		 *
+		 * @return the password example
+		 */
+		public String getPasswordExample() {
+			return passwordExample;
+		}
+
+		/**
+		 * Sets password example.
+		 *
+		 * @param passwordExample the password example
+		 */
+		public void setPasswordExample(String passwordExample) {
+			this.passwordExample = passwordExample;
+		}
 	}
 }

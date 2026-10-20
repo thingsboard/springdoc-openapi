@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -28,18 +28,17 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 @TestPropertySource(properties = {
 		"springdoc.swagger-ui.path=/documentation/swagger-ui.html",
-		"springdoc.api-docs.path=/documentation/v3/api-docs",
-		"springdoc.webjars.prefix= /webjars-pref"
+		"springdoc.api-docs.path=/documentation/v3/api-docs"
 })
 public class SpringDocApp3RedirectWithPrefixTest extends AbstractSpringDocTest {
 
 	@Test
-	public void shouldRedirectWithPrefix() {
+	void shouldRedirectWithPrefix() {
 		WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/documentation/swagger-ui.html").exchange()
 				.expectStatus().isFound();
 		responseSpec.expectHeader()
-				.value("Location", Matchers.is("/documentation/webjars-pref/swagger-ui/index.html"));
-		webTestClient.get().uri("/documentation/webjars-pref/swagger-ui/index.html").exchange()
+				.value("Location", Matchers.is("/documentation/swagger-ui/index.html"));
+		webTestClient.get().uri("/documentation/swagger-ui/index.html").exchange()
 				.expectStatus().isOk();
 		webTestClient.get().uri("/documentation/v3/api-docs/swagger-config").exchange()
 				.expectStatus().isOk().expectBody().jsonPath("$.validatorUrl").isEqualTo("");

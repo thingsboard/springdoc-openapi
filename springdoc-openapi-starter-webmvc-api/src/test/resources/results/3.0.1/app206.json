@@ -16,14 +16,15 @@
         "tags": [
           "required-mode-controller"
         ],
-        "operationId": "index_1",
+        "operationId": "index",
         "parameters": [
           {
             "name": "id",
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "format": "int64"
             }
           },
           {
@@ -57,7 +58,8 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],

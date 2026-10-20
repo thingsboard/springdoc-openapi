@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -30,17 +32,15 @@ import java.util.Optional;
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.api.AbstractOpenApiResource;
+import org.springdoc.core.configuration.SpringDocWebServerConfiguration;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.utils.Constants;
 
+import org.springframework.beans.BeansException;
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointProperties;
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
-import org.springframework.boot.autoconfigure.web.ServerProperties;
-import org.springframework.boot.web.context.WebServerApplicationContext;
-import org.springframework.boot.web.context.WebServerInitializedEvent;
-import org.springframework.boot.web.server.WebServer;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationListener;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.method.HandlerMethod;
 
@@ -49,9 +49,10 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 /**
  * The type Actuator provider.
+ *
  * @author bnasslahsen
  */
-public abstract class ActuatorProvider implements ApplicationListener<WebServerInitializedEvent> {
+public abstract class ActuatorProvider implements ApplicationContextAware {
 
 	/**
 	 * The Management server properties.
@@ -63,10 +64,11 @@ public abstract class ActuatorProvider implements ApplicationListener<WebServerI
 	 */
 	protected WebEndpointProperties webEndpointProperties;
 
+
 	/**
-	 * The Server properties.
-	 */
-	protected ServerProperties serverProperties;
+	 * The server context
+         */
+	protected SpringDocWebServerConfiguration.SpringDocWebServerContext springDocWebServerContext;
 
 	/**
 	 * The Spring doc config properties.
@@ -74,38 +76,28 @@ public abstract class ActuatorProvider implements ApplicationListener<WebServerI
 	protected SpringDocConfigProperties springDocConfigProperties;
 
 	/**
-	 * The Actuator web server.
+	 * The Application context.
 	 */
-	protected WebServer actuatorWebServer;
-
-	/**
-	 * The Application web server.
-	 */
-	protected WebServer applicationWebServer;
-
-	/**
-	 * The Management application context.
-	 */
-	protected ApplicationContext managementApplicationContext;
+	protected ApplicationContext applicationContext;
 
 	/**
 	 * Instantiates a new Actuator provider.
 	 *
 	 * @param managementServerProperties the management server properties
-	 * @param webEndpointProperties the web endpoint properties
-	 * @param serverProperties the server properties
-	 * @param springDocConfigProperties the spring doc config properties
+	 * @param webEndpointProperties      the web endpoint properties
+	 * @param springDocWebServerContext  the server context
+	 * @param springDocConfigProperties  the spring doc config properties
 	 */
-	public ActuatorProvider(Optional<ManagementServerProperties> managementServerProperties,
+	protected ActuatorProvider(Optional<ManagementServerProperties> managementServerProperties,
 			Optional<WebEndpointProperties> webEndpointProperties,
-			ServerProperties serverProperties,
+			SpringDocWebServerConfiguration.SpringDocWebServerContext springDocWebServerContext,
 			SpringDocConfigProperties springDocConfigProperties) {
 
 		managementServerProperties.ifPresent(managementServerProperties1 -> this.managementServerProperties = managementServerProperties1);
 		webEndpointProperties.ifPresent(webEndpointProperties1 -> this.webEndpointProperties = webEndpointProperties1);
 
-		this.serverProperties = serverProperties;
 		this.springDocConfigProperties = springDocConfigProperties;
+		this.springDocWebServerContext = springDocWebServerContext;
 	}
 
 	/**
@@ -125,16 +117,6 @@ public abstract class ActuatorProvider implements ApplicationListener<WebServerI
 		return actuatorTag;
 	}
 
-	@Override
-	public void onApplicationEvent(WebServerInitializedEvent event) {
-		if (WebServerApplicationContext.hasServerNamespace(event.getApplicationContext(), "management")) {
-			managementApplicationContext = event.getApplicationContext();
-			actuatorWebServer = event.getWebServer();
-		}
-		else {
-			applicationWebServer = event.getWebServer();
-		}
-	}
 
 	/**
 	 * Is rest controller boolean.
@@ -191,7 +173,7 @@ public abstract class ActuatorProvider implements ApplicationListener<WebServerI
 	 * @return the application port
 	 */
 	public int getApplicationPort() {
-		return applicationWebServer.getPort();
+		return this.springDocWebServerContext.getApplicationPort().get();
 	}
 
 	/**
@@ -200,7 +182,7 @@ public abstract class ActuatorProvider implements ApplicationListener<WebServerI
 	 * @return the actuator port
 	 */
 	public int getActuatorPort() {
-		return actuatorWebServer.getPort();
+		return this.springDocWebServerContext.getActuatorPort().get();
 	}
 
 	/**
@@ -210,4 +192,8 @@ public abstract class ActuatorProvider implements ApplicationListener<WebServerI
 	 */
 	public abstract Map getMethods();
 
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
+	}
 }

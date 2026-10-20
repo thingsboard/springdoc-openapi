@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2023 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.hamcrest.Matchers.is;
@@ -54,9 +55,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = {
+@TestPropertySource(properties = {
 		"springdoc.pre-loading-enabled=true",
-		"springdoc.pre-loading-locales=ja"
+		"springdoc.pre-loading-locales=ja",
+		"springdoc.api-docs.version=openapi_3_0"
 })
 public class SpringDocApp209Test extends AbstractCommonTest {
 	public static String className;
@@ -68,6 +70,23 @@ public class SpringDocApp209Test extends AbstractCommonTest {
 
 	@Autowired
 	private OpenAPIServiceMock openAPIService;
+
+	@Test
+	void shouldOnlyByCalledOnce() throws Exception {
+		//	assertEquals(1, openAPIService.getNumberOfTimesCalculatePathWasCalled());
+
+		className = getClass().getSimpleName();
+		String testNumber = className.replaceAll("[^0-9]", "");
+		MvcResult mockMvcResult = mockMvc
+				.perform(get(Constants.DEFAULT_API_DOCS_URL).header(HttpHeaders.ACCEPT_LANGUAGE, "ja"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.openapi", is("3.0.1"))).andReturn();
+		String result = mockMvcResult.getResponse().getContentAsString();
+		String expected = getContent("results/3.0.1/app" + testNumber + ".json");
+		JSONAssert.assertEquals(expected, result, true);
+
+		assertEquals(1, openAPIService.getNumberOfTimesCalculatePathWasCalled());
+	}
 
 	@SpringBootApplication
 	static class SpringDocTestApp {
@@ -93,22 +112,5 @@ public class SpringDocApp209Test extends AbstractCommonTest {
 		public int getNumberOfTimesCalculatePathWasCalled() {
 			return numberOfTimesCalculatePathWasCalled;
 		}
-	}
-
-	@Test
-	public void shouldOnlyByCalledOnce() throws Exception {
-	//	assertEquals(1, openAPIService.getNumberOfTimesCalculatePathWasCalled());
-
-		className = getClass().getSimpleName();
-		String testNumber = className.replaceAll("[^0-9]", "");
-		MvcResult mockMvcResult = mockMvc
-				.perform(get(Constants.DEFAULT_API_DOCS_URL).header(HttpHeaders.ACCEPT_LANGUAGE, "ja"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.openapi", is("3.0.1"))).andReturn();
-		String result = mockMvcResult.getResponse().getContentAsString();
-		String expected = getContent("results/3.0.1/app" + testNumber + ".json");
-		JSONAssert.assertEquals(expected, result, true);
-
-		assertEquals(1, openAPIService.getNumberOfTimesCalculatePathWasCalled());
 	}
 }

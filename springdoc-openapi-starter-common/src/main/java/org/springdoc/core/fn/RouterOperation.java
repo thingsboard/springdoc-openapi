@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -33,6 +35,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springdoc.core.fn.builders.operation.Builder;
+import org.springdoc.core.versions.SpringDocVersionStrategy;
 
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -40,6 +43,7 @@ import static org.springdoc.core.utils.Constants.OPERATION_ATTRIBUTE;
 
 /**
  * The type Router operation.
+ *
  * @author bnasslahsen
  */
 public class RouterOperation implements Comparable<RouterOperation> {
@@ -105,6 +109,16 @@ public class RouterOperation implements Comparable<RouterOperation> {
 	private io.swagger.v3.oas.models.Operation operationModel;
 
 	/**
+	 * The Spring doc version strategy.
+	 */
+	private SpringDocVersionStrategy springDocVersionStrategy;
+
+	/**
+	 * The Version.
+	 */
+	private String version;
+
+	/**
 	 * Instantiates a new Router operation.
 	 */
 	public RouterOperation() {
@@ -132,7 +146,7 @@ public class RouterOperation implements Comparable<RouterOperation> {
 	 * Instantiates a new Router operation.
 	 *
 	 * @param routerOperationAnnotation the router operation annotation
-	 * @param routerFunctionData the router function data
+	 * @param routerFunctionData        the router function data
 	 */
 	public RouterOperation(org.springdoc.core.annotations.RouterOperation routerOperationAnnotation, RouterFunctionData routerFunctionData) {
 		this.path = StringUtils.isBlank(routerOperationAnnotation.path()) ? routerFunctionData.getPath() : routerOperationAnnotation.path();
@@ -146,24 +160,28 @@ public class RouterOperation implements Comparable<RouterOperation> {
 		this.headers = ArrayUtils.isEmpty(routerOperationAnnotation.headers()) ? routerFunctionData.getHeaders() : routerOperationAnnotation.headers();
 		this.params = routerOperationAnnotation.params();
 		this.queryParams = routerFunctionData.getQueryParams();
+		this.version = routerFunctionData.getVersion();
 	}
 
 	/**
 	 * Instantiates a new Router operation.
 	 *
-	 * @param path the path
-	 * @param methods the methods
-	 * @param consumes the consumes
-	 * @param produces the produces
-	 * @param headers the headers
+	 * @param path            the path
+	 * @param methods         the methods
+	 * @param consumes        the consumes
+	 * @param produces        the produces
+	 * @param headers         the headers
+	 * @param params          the params
+	 * @param springDocVersionStrategy the version strategy
 	 */
-	public RouterOperation(String path, RequestMethod[] methods, String[] consumes, String[] produces, String[] headers, String[] params) {
+	public RouterOperation(String path, RequestMethod[] methods, String[] consumes, String[] produces, String[] headers, String[] params, SpringDocVersionStrategy springDocVersionStrategy) {
 		this.path = path;
 		this.methods = methods;
 		this.consumes = consumes;
 		this.produces = produces;
 		this.headers = headers;
 		this.params = params;
+		this.springDocVersionStrategy = springDocVersionStrategy;
 	}
 
 	/**
@@ -179,6 +197,7 @@ public class RouterOperation implements Comparable<RouterOperation> {
 		this.headers = routerFunctionData.getHeaders();
 		this.params = routerFunctionData.getParams();
 		this.queryParams = routerFunctionData.getQueryParams();
+		this.version = routerFunctionData.getVersion();
 
 		Map<String, Object> attributes = routerFunctionData.getAttributes();
 		if (attributes.containsKey(OPERATION_ATTRIBUTE)) {
@@ -195,7 +214,7 @@ public class RouterOperation implements Comparable<RouterOperation> {
 	 * Instantiates a new Router operation.
 	 *
 	 * @param routerOperation the router operation
-	 * @param requestMethod the request method
+	 * @param requestMethod   the request method
 	 */
 	public RouterOperation(org.springdoc.core.annotations.RouterOperation routerOperation, RequestMethod requestMethod) {
 		this(routerOperation);
@@ -394,7 +413,7 @@ public class RouterOperation implements Comparable<RouterOperation> {
 	/**
 	 * Sets params.
 	 *
-	 * @param params
+	 * @param params the params
 	 */
 	public void setParams(String[] params) {
 		this.params = params;
@@ -416,6 +435,42 @@ public class RouterOperation implements Comparable<RouterOperation> {
 	 */
 	public void setOperationModel(io.swagger.v3.oas.models.Operation operationModel) {
 		this.operationModel = operationModel;
+	}
+
+	/**
+	 * Gets version strategy.
+	 *
+	 * @return the version strategy
+	 */
+	public SpringDocVersionStrategy getSpringDocVersionStrategy() {
+		return springDocVersionStrategy;
+	}
+
+	/**
+	 * Sets version strategy.
+	 *
+	 * @param springDocVersionStrategy the version strategy
+	 */
+	public void setVersionStrategy(SpringDocVersionStrategy springDocVersionStrategy) {
+		this.springDocVersionStrategy = springDocVersionStrategy;
+	}
+
+	/**
+	 * Gets version.
+	 *
+	 * @return the version
+	 */
+	public String getVersion() {
+		return version;
+	}
+
+	/**
+	 * Sets version.
+	 *
+	 * @param version the version
+	 */
+	public void setVersion(String version) {
+		this.version = version;
 	}
 
 	@Override

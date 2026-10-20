@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -24,58 +26,72 @@
 
 package org.springdoc.core.service;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.math.BigDecimal;
+import java.security.Principal;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TimeZone;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import io.swagger.v3.core.util.PrimitiveType;
+import io.swagger.v3.core.converter.AnnotatedType;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.media.Content;
-import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springdoc.core.customizers.DelegatingMethodParameterCustomizer;
 import org.springdoc.core.customizers.ParameterCustomizer;
+import org.springdoc.core.customizers.PropertyCustomizer;
+import org.springdoc.core.customizers.SpringDocCustomizers;
 import org.springdoc.core.discoverer.SpringDocParameterNameDiscoverer;
 import org.springdoc.core.extractor.DelegatingMethodParameter;
+import org.springdoc.core.extractor.MethodParameterPojoExtractor;
 import org.springdoc.core.models.MethodAttributes;
 import org.springdoc.core.models.ParameterId;
 import org.springdoc.core.models.ParameterInfo;
 import org.springdoc.core.models.RequestBodyInfo;
 import org.springdoc.core.properties.SpringDocConfigProperties.ApiDocs.OpenApiVersion;
 import org.springdoc.core.providers.JavadocProvider;
+import org.springdoc.core.providers.ObjectMapperProvider;
+import org.springdoc.core.utils.SchemaUtils;
 import org.springdoc.core.utils.SpringDocAnnotationsUtils;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
 import org.springframework.util.CollectionUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
@@ -83,6 +99,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ValueConstants;
 import org.springframework.web.bind.support.SessionStatus;
 import org.springframework.web.context.request.NativeWebRequest;
@@ -92,8 +109,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import static org.springdoc.core.converters.SchemaPropertyDeprecatingConverter.containsDeprecatedAnnotation;
 import static org.springdoc.core.service.GenericParameterService.isFile;
-import static org.springdoc.core.utils.Constants.OPENAPI_ARRAY_TYPE;
-import static org.springdoc.core.utils.Constants.OPENAPI_STRING_TYPE;
+import static org.springdoc.core.utils.SpringDocUtils.cloneViaJson;
+import static org.springdoc.core.utils.SpringDocUtils.getParameterAnnotations;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE;
+import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
 /**
  * The type Abstract request builder.
@@ -103,41 +122,39 @@ import static org.springdoc.core.utils.Constants.OPENAPI_STRING_TYPE;
 public abstract class AbstractRequestService {
 
 	/**
+	 * The constant LOGGER.
+	 */
+	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRequestService.class);
+
+	/**
+	 * The constant ACTUATOR_PKGS.
+	 */
+	private static final List<String> ACTUATOR_PKGS = List.of(
+			"org.springframework.boot.webmvc.actuate",
+			"org.springframework.boot.webflux.actuate"
+	);
+
+	/**
 	 * The constant PARAM_TYPES_TO_IGNORE.
 	 */
-	private static final List<Class<?>> PARAM_TYPES_TO_IGNORE = Collections.synchronizedList(new ArrayList<>());
-
-	/**
-	 * The constant ANNOTATIONS_FOR_REQUIRED.
-	 */
-// using string litterals to support both validation-api v1 and v2
-	private static final String[] ANNOTATIONS_FOR_REQUIRED = { "NotNull", "NonNull", "NotBlank", "NotEmpty" };
-
-	/**
-	 * The constant POSITIVE_OR_ZERO.
-	 */
-	private static final String POSITIVE_OR_ZERO = "PositiveOrZero";
-
-	/**
-	 * The constant NEGATIVE_OR_ZERO.
-	 */
-	private static final String NEGATIVE_OR_ZERO = "NegativeOrZero";
+	private static final List<Class<?>> PARAM_TYPES_TO_IGNORE = new CopyOnWriteArrayList<>();
 
 	static {
 		PARAM_TYPES_TO_IGNORE.add(WebRequest.class);
 		PARAM_TYPES_TO_IGNORE.add(NativeWebRequest.class);
-		PARAM_TYPES_TO_IGNORE.add(java.security.Principal.class);
+		PARAM_TYPES_TO_IGNORE.add(Principal.class);
 		PARAM_TYPES_TO_IGNORE.add(HttpMethod.class);
-		PARAM_TYPES_TO_IGNORE.add(java.util.Locale.class);
-		PARAM_TYPES_TO_IGNORE.add(java.util.TimeZone.class);
-		PARAM_TYPES_TO_IGNORE.add(java.io.InputStream.class);
-		PARAM_TYPES_TO_IGNORE.add(java.time.ZoneId.class);
-		PARAM_TYPES_TO_IGNORE.add(java.io.Reader.class);
-		PARAM_TYPES_TO_IGNORE.add(java.io.OutputStream.class);
-		PARAM_TYPES_TO_IGNORE.add(java.io.Writer.class);
-		PARAM_TYPES_TO_IGNORE.add(java.util.Map.class);
-		PARAM_TYPES_TO_IGNORE.add(org.springframework.ui.Model.class);
-		PARAM_TYPES_TO_IGNORE.add(org.springframework.ui.ModelMap.class);
+		PARAM_TYPES_TO_IGNORE.add(HttpHeaders.class);
+		PARAM_TYPES_TO_IGNORE.add(Locale.class);
+		PARAM_TYPES_TO_IGNORE.add(TimeZone.class);
+		PARAM_TYPES_TO_IGNORE.add(InputStream.class);
+		PARAM_TYPES_TO_IGNORE.add(ZoneId.class);
+		PARAM_TYPES_TO_IGNORE.add(Reader.class);
+		PARAM_TYPES_TO_IGNORE.add(OutputStream.class);
+		PARAM_TYPES_TO_IGNORE.add(Writer.class);
+		PARAM_TYPES_TO_IGNORE.add(Map.class);
+		PARAM_TYPES_TO_IGNORE.add(Model.class);
+		PARAM_TYPES_TO_IGNORE.add(ModelMap.class);
 		PARAM_TYPES_TO_IGNORE.add(Errors.class);
 		PARAM_TYPES_TO_IGNORE.add(BindingResult.class);
 		PARAM_TYPES_TO_IGNORE.add(SessionStatus.class);
@@ -154,11 +171,6 @@ public abstract class AbstractRequestService {
 	 * The Request body builder.
 	 */
 	private final RequestBodyService requestBodyService;
-
-	/**
-	 * The Operation builder.
-	 */
-	private final OperationService operationService;
 
 	/**
 	 * The Local spring doc parameter name discoverer.
@@ -181,23 +193,35 @@ public abstract class AbstractRequestService {
 	private boolean defaultSupportFormData;
 
 	/**
+	 * The Optional delegating method parameter customizers.
+	 */
+	private final Optional<List<DelegatingMethodParameterCustomizer>> optionalDelegatingMethodParameterCustomizers;
+
+	/**
+	 * The Method parameter pojo extractor.
+	 */
+	private final MethodParameterPojoExtractor methodParameterPojoExtractor;
+
+	/**
 	 * Instantiates a new Abstract request builder.
 	 *
 	 * @param parameterBuilder                      the parameter builder
 	 * @param requestBodyService                    the request body builder
-	 * @param operationService                      the operation builder
-	 * @param parameterCustomizers                  the parameter customizers
+	 * @param springDocCustomizers                  the spring doc customizers
 	 * @param localSpringDocParameterNameDiscoverer the local spring doc parameter name discoverer
+	 * @param methodParameterPojoExtractor          the method parameter pojo extractor
 	 */
 	protected AbstractRequestService(GenericParameterService parameterBuilder, RequestBodyService requestBodyService,
-			OperationService operationService, Optional<List<ParameterCustomizer>> parameterCustomizers,
-			SpringDocParameterNameDiscoverer localSpringDocParameterNameDiscoverer) {
+			SpringDocCustomizers springDocCustomizers,
+			SpringDocParameterNameDiscoverer localSpringDocParameterNameDiscoverer,
+			MethodParameterPojoExtractor methodParameterPojoExtractor) {
 		super();
 		this.parameterBuilder = parameterBuilder;
 		this.requestBodyService = requestBodyService;
-		this.operationService = operationService;
+		this.optionalDelegatingMethodParameterCustomizers = springDocCustomizers.getOptionalDelegatingMethodParameterCustomizers();
+		this.methodParameterPojoExtractor = methodParameterPojoExtractor;
+		this.parameterCustomizers = springDocCustomizers.getParameterCustomizers();
 		parameterCustomizers.ifPresent(customizers -> customizers.removeIf(Objects::isNull));
-		this.parameterCustomizers = parameterCustomizers;
 		this.localSpringDocParameterNameDiscoverer = localSpringDocParameterNameDiscoverer;
 		this.defaultFlatParamObject = parameterBuilder.getPropertyResolverUtils().getSpringDocConfigProperties().isDefaultFlatParamObject();
 		this.defaultSupportFormData = parameterBuilder.getPropertyResolverUtils().getSpringDocConfigProperties().isDefaultSupportFormData();
@@ -209,7 +233,7 @@ public abstract class AbstractRequestService {
 	 * @param classes the classes
 	 */
 	public static void addRequestWrapperToIgnore(Class<?>... classes) {
-		PARAM_TYPES_TO_IGNORE.addAll(Arrays.asList(classes));
+		PARAM_TYPES_TO_IGNORE.addAll(List.of(classes));
 	}
 
 	/**
@@ -218,9 +242,7 @@ public abstract class AbstractRequestService {
 	 * @param classes the classes
 	 */
 	public static void removeRequestWrapperToIgnore(Class<?>... classes) {
-		List<Class<?>> classesToIgnore = Arrays.asList(classes);
-		if (PARAM_TYPES_TO_IGNORE.containsAll(classesToIgnore))
-			PARAM_TYPES_TO_IGNORE.removeAll(Arrays.asList(classes));
+		PARAM_TYPES_TO_IGNORE.removeAll(List.of(classes));
 	}
 
 	/**
@@ -230,7 +252,11 @@ public abstract class AbstractRequestService {
 	 * @return the boolean
 	 */
 	public static boolean isRequestTypeToIgnore(Class<?> rawClass) {
-		return PARAM_TYPES_TO_IGNORE.stream().anyMatch(clazz -> clazz.isAssignableFrom(rawClass));
+		for (Class<?> clazz : PARAM_TYPES_TO_IGNORE) {
+			if (clazz.isAssignableFrom(rawClass))
+				return true;
+		}
+		return false;
 	}
 
 	/**
@@ -242,19 +268,31 @@ public abstract class AbstractRequestService {
 	 */
 	@SuppressWarnings("unchecked")
 	public static Collection<Parameter> getHeaders(MethodAttributes methodAttributes, Map<ParameterId, Parameter> map) {
-		for (Map.Entry<String, String> entry : methodAttributes.getHeaders().entrySet()) {
+		Map<String, String> versionDefaultMap = null;
+		if (methodAttributes.getSpringDocVersionStrategy() != null)
+			versionDefaultMap = methodAttributes.getSpringDocVersionStrategy().getVersionDefaultMap();
+		for (Entry<String, String> entry : methodAttributes.getHeaders().entrySet()) {
 			StringSchema schema = new StringSchema();
-			if (StringUtils.isNotEmpty(entry.getValue()))
-				schema.addEnumItem(entry.getValue());
-			Parameter parameter = new Parameter().in(ParameterIn.HEADER.toString()).name(entry.getKey()).schema(schema);
+			String headerName = entry.getKey();
+			String headerValue = entry.getValue();
+			if (StringUtils.isNotEmpty(headerValue))
+				schema.addEnumItem(headerValue);
+			String defaultValue = null;
+			if(versionDefaultMap != null) {
+				defaultValue = versionDefaultMap.get(headerName);
+				schema._default(defaultValue);
+			}
+			Parameter parameter = new Parameter().in(ParameterIn.HEADER.toString()).name(headerName).schema(schema);
 			ParameterId parameterId = new ParameterId(parameter);
 			if (map.containsKey(parameterId)) {
 				parameter = map.get(parameterId);
 				List existingEnum = null;
 				if (parameter.getSchema() != null && !CollectionUtils.isEmpty(parameter.getSchema().getEnum()))
 					existingEnum = parameter.getSchema().getEnum();
-				if (StringUtils.isNotEmpty(entry.getValue()) && (existingEnum == null || !existingEnum.contains(entry.getValue())))
-					parameter.getSchema().addEnumItemObject(entry.getValue());
+				if (StringUtils.isNotEmpty(headerValue) && (existingEnum == null || !existingEnum.contains(headerValue)))
+					parameter.getSchema().addEnumItemObject(headerValue);
+				if (defaultValue != null && (existingEnum == null || !existingEnum.contains(defaultValue)))
+					parameter.getSchema().addEnumItemObject(defaultValue);
 				parameter.setSchema(parameter.getSchema());
 			}
 			map.put(parameterId, parameter);
@@ -271,12 +309,14 @@ public abstract class AbstractRequestService {
 	 * @param methodAttributes the method attributes
 	 * @param openAPI          the open api
 	 * @return the operation
+	 * @see DelegatingMethodParameterCustomizer#customizeList(MethodParameter, List) org.springdoc.core.customizers.DelegatingMethodParameterCustomizer#customizeList(MethodParameter, List)
+	 * @see ParameterCustomizer#customize(Parameter, MethodParameter) ParameterCustomizer#customize(Parameter, MethodParameter)
+	 * @see PropertyCustomizer#customize(Schema, AnnotatedType) org.springdoc.core.customizers.PropertyCustomizer#customize(Schema, AnnotatedType)
 	 */
 	public Operation build(HandlerMethod handlerMethod, RequestMethod requestMethod,
 			Operation operation, MethodAttributes methodAttributes, OpenAPI openAPI) {
 		// Documentation
-		String operationId = operationService.getOperationId(handlerMethod.getMethod().getName(),
-				operation.getOperationId(), openAPI);
+		String operationId = operation.getOperationId() != null ? operation.getOperationId() : handlerMethod.getMethod().getName();
 		operation.setOperationId(operationId);
 		// requests
 		String[] pNames = this.localSpringDocParameterNameDiscoverer.getParameterNames(handlerMethod.getMethod());
@@ -284,7 +324,8 @@ public abstract class AbstractRequestService {
 		String[] reflectionParametersNames = Arrays.stream(handlerMethod.getMethod().getParameters()).map(java.lang.reflect.Parameter::getName).toArray(String[]::new);
 		if (pNames == null || Arrays.stream(pNames).anyMatch(Objects::isNull))
 			pNames = reflectionParametersNames;
-		parameters = DelegatingMethodParameter.customize(pNames, parameters, parameterBuilder.getDelegatingMethodParameterCustomizer(), this.defaultFlatParamObject);
+		// Process: DelegatingMethodParameterCustomizer
+		parameters = DelegatingMethodParameter.customize(pNames, parameters, optionalDelegatingMethodParameterCustomizers, methodParameterPojoExtractor, this.defaultFlatParamObject);
 		RequestBodyInfo requestBodyInfo = new RequestBodyInfo();
 		List<Parameter> operationParameters = (operation.getParameters() != null) ? operation.getParameters() : new ArrayList<>();
 		Map<ParameterId, io.swagger.v3.oas.annotations.Parameter> parametersDocMap = getApiParameters(handlerMethod.getMethod());
@@ -323,11 +364,11 @@ public abstract class AbstractRequestService {
 			}
 
 			if (!isParamToIgnore(methodParameter)) {
-				parameter = buildParams(parameterInfo, components, requestMethod, methodAttributes.getJsonViewAnnotation(), openAPI.getOpenapi());
-				// Merge with the operation parameters
-				parameter = GenericParameterService.mergeParameter(operationParameters, parameter);
-				List<Annotation> parameterAnnotations = Arrays.asList(methodParameter.getParameterAnnotations());
-				if (isValidParameter(parameter)) {
+				parameter = buildParams(parameterInfo, components, requestMethod, methodAttributes, openAPI.getOpenapi());
+				List<Annotation> parameterAnnotations = List.of(getParameterAnnotations(methodParameter));
+				if (isValidParameter(parameter, methodAttributes)) {
+					// Merge with the operation parameters
+					parameter = GenericParameterService.mergeParameter(operationParameters, parameter);
 					// Add param javadoc
 					if (StringUtils.isBlank(parameter.getDescription()) && javadocProvider != null) {
 						String paramJavadocDescription = parameterBuilder.getParamJavadoc(javadocProvider, methodParameter);
@@ -335,15 +376,18 @@ public abstract class AbstractRequestService {
 							parameter.setDescription(paramJavadocDescription);
 						}
 					}
-					applyBeanValidatorAnnotations(parameter, parameterAnnotations);
+					// Process: applyValidationsToSchema
+					applyBeanValidatorAnnotations(methodParameter, parameter, parameterAnnotations, parameterInfo.isParameterObject(), openAPI.getOpenapi());
 				}
 				else if (!RequestMethod.GET.equals(requestMethod) || OpenApiVersion.OPENAPI_3_1.getVersion().equals(openAPI.getOpenapi())) {
 					if (operation.getRequestBody() != null)
 						requestBodyInfo.setRequestBody(operation.getRequestBody());
+					// Process: PropertyCustomizer
 					requestBodyService.calculateRequestBodyInfo(components, methodAttributes,
 							parameterInfo, requestBodyInfo);
 					applyBeanValidatorAnnotations(requestBodyInfo.getRequestBody(), parameterAnnotations, methodParameter.isOptional());
 				}
+				// Process: ParameterCustomizer
 				customiseParameter(parameter, parameterInfo, operationParameters);
 			}
 		}
@@ -353,19 +397,27 @@ public abstract class AbstractRequestService {
 		// support form-data
 		if (defaultSupportFormData && requestBody != null
 				&& requestBody.getContent() != null
-				&& requestBody.getContent().containsKey(org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)) {
+				&& requestBody.getContent().containsKey(MULTIPART_FORM_DATA_VALUE)) {
 			Iterator<Entry<ParameterId, Parameter>> it = map.entrySet().iterator();
 			while (it.hasNext()) {
 				Entry<ParameterId, Parameter> entry = it.next();
 				Parameter parameter = entry.getValue();
 				if (!ParameterIn.PATH.toString().equals(parameter.getIn()) && !ParameterIn.HEADER.toString().equals(parameter.getIn())
 						&& !ParameterIn.COOKIE.toString().equals(parameter.getIn())) {
-					io.swagger.v3.oas.models.media.Schema<?> itemSchema = new io.swagger.v3.oas.models.media.Schema<>();
-					itemSchema.setName(entry.getKey().getpName());
-					itemSchema.setDescription(parameter.getDescription());
-					itemSchema.setDeprecated(parameter.getDeprecated());
+					Schema<?> itemSchema;
+					if (parameter.getSchema() != null) {
+						itemSchema = parameter.getSchema();
+					}
+					else {
+						itemSchema = new Schema<>();
+						itemSchema.setName(entry.getKey().getpName());
+					}
+					if (StringUtils.isNotEmpty(parameter.getDescription()))
+						itemSchema.setDescription(parameter.getDescription());
 					if (parameter.getExample() != null)
 						itemSchema.setExample(parameter.getExample());
+					if (parameter.getDeprecated() != null)
+						itemSchema.setDeprecated(parameter.getDeprecated());
 					requestBodyInfo.addProperties(entry.getKey().getpName(), itemSchema);
 					it.remove();
 				}
@@ -384,12 +436,21 @@ public abstract class AbstractRequestService {
 	 * @param parametersDocMap    the parameters doc map
 	 * @return the parameter linked hash map
 	 */
-	private LinkedHashMap<ParameterId, Parameter> getParameterLinkedHashMap(Components components, MethodAttributes methodAttributes, List<Parameter> operationParameters, Map<ParameterId, io.swagger.v3.oas.annotations.Parameter> parametersDocMap) {
-		LinkedHashMap<ParameterId, Parameter> map = operationParameters.stream().collect(Collectors.toMap(ParameterId::new, parameter -> parameter, (u, v) -> {
-			throw new IllegalStateException(String.format("Duplicate key %s", u));
+	private LinkedHashMap<ParameterId, Parameter> getParameterLinkedHashMap(Components components,
+																			MethodAttributes methodAttributes,
+																			List<Parameter> operationParameters,
+																			Map<ParameterId, io.swagger.v3.oas.annotations.Parameter> parametersDocMap) {
+		LinkedHashMap<ParameterId, Parameter> map = operationParameters.stream()
+				.collect(Collectors.toMap(ParameterId::new, parameter -> parameter, (u, v) -> {
+			LOGGER.warn(
+					"Duplicate OpenAPI parameter detected: name='{}', in='{}'. Keeping the first found and ignoring the rest. " +
+							"Declare the parameter only once.",
+					u.getName(), u.getIn()
+			);
+			return u;
 		}, LinkedHashMap::new));
 
-		for (Map.Entry<ParameterId, io.swagger.v3.oas.annotations.Parameter> entry : parametersDocMap.entrySet()) {
+		for (Entry<ParameterId, io.swagger.v3.oas.annotations.Parameter> entry : parametersDocMap.entrySet()) {
 			ParameterId parameterId = entry.getKey();
 			if (parameterId != null && !map.containsKey(parameterId) && !entry.getValue().hidden()) {
 				Parameter parameter = parameterBuilder.buildParameterFromDoc(entry.getValue(), components, methodAttributes.getJsonViewAnnotation(), methodAttributes.getLocale());
@@ -402,7 +463,8 @@ public abstract class AbstractRequestService {
 					long mumParamsWithName = map.keySet().stream().filter(parameterId1 -> parameterId.getpName().equals(parameterId1.getpName())).count();
 					long mumParamsDocWithName = parametersDocMap.keySet().stream().filter(parameterId1 -> parameterId.getpName().equals(parameterId1.getpName())).count();
 					if (mumParamsWithName == 1 && mumParamsDocWithName == 1) {
-						Optional<ParameterId> parameterIdWithSameNameOptional = map.keySet().stream().filter(parameterId1 -> parameterId.getpName().equals(parameterId1.getpName())).findAny();
+						Optional<ParameterId> parameterIdWithSameNameOptional = map.keySet().stream()
+								.filter(parameterId1 -> parameterId.getpName().equals(parameterId1.getpName())).findAny();
 						parameterIdWithSameNameOptional.ifPresent(parameterIdWithSameName -> {
 							GenericParameterService.mergeParameter(map.get(parameterIdWithSameName), parameter);
 							map.put(parameterIdWithSameName, parameter);
@@ -435,8 +497,12 @@ public abstract class AbstractRequestService {
 			int index = operationParameters.indexOf(parameter);
 			for (ParameterCustomizer parameterCustomizer : parameterCustomizerList)
 				parameter = parameterCustomizer.customize(parameter, parameterInfo.getMethodParameter());
-			if (index != -1)
-				operationParameters.set(index, parameter);
+			if (index != -1) {
+				if (parameter == null)
+					operationParameters.remove(index);
+				else
+					operationParameters.set(index, parameter);
+			}
 		}
 	}
 
@@ -450,6 +516,10 @@ public abstract class AbstractRequestService {
 		if (SpringDocAnnotationsUtils.isAnnotationToIgnore(parameter))
 			return true;
 		if (isRequiredAnnotation(parameter))
+			return false;
+		if (isRequestBodyWithMapType(parameter))
+			return false;
+		if (isRequestPartWithMapType(parameter))
 			return false;
 		return isRequestTypeToIgnore(parameter.getParameterType());
 	}
@@ -470,6 +540,46 @@ public abstract class AbstractRequestService {
 	}
 
 	/**
+	 * Is request body with map type
+	 *
+	 * @param parameter the parameter
+	 * @return the boolean
+	 */
+	private boolean isRequestBodyWithMapType(MethodParameter parameter) {
+		// Exclude parameters from the Actuator package
+		String pkg = parameter.getContainingClass().getPackageName();
+		if (ACTUATOR_PKGS.stream().anyMatch(pkg::startsWith)) {
+			return false;
+		}
+
+		// Check for @RequestBody annotation
+		org.springframework.web.bind.annotation.RequestBody requestBody = parameter.getParameterAnnotation(org.springframework.web.bind.annotation.RequestBody.class);
+		if (requestBody == null) {
+			return false;
+		}
+		// Check if the parameter type is assignable to Map
+		Class<?> parameterType = parameter.getParameterType();
+		return Map.class.isAssignableFrom(parameterType);
+	}
+
+	/**
+	 * Is request part with map type
+	 *
+	 * @param parameter the parameter
+	 * @return the boolean
+	 */
+	private boolean isRequestPartWithMapType(MethodParameter parameter) {
+		// Check for @RequestPart annotation
+		RequestPart requestPart = parameter.getParameterAnnotation(RequestPart.class);
+		if (requestPart == null) {
+			return false;
+		}
+		// Check if the parameter type is assignable to Map
+		Class<?> parameterType = parameter.getParameterType();
+		return Map.class.isAssignableFrom(parameterType);
+	}
+
+	/**
 	 * Sets params.
 	 *
 	 * @param operation           the operation
@@ -486,38 +596,40 @@ public abstract class AbstractRequestService {
 	/**
 	 * Is valid parameter boolean.
 	 *
-	 * @param parameter the parameter
+	 * @param parameter        the parameter
+	 * @param methodAttributes the method attributes
 	 * @return the boolean
 	 */
-	public boolean isValidParameter(Parameter parameter) {
-		return parameter != null && (parameter.getName() != null || parameter.get$ref() != null);
+	public boolean isValidParameter(Parameter parameter, MethodAttributes methodAttributes) {
+		return parameter != null && (parameter.getName() != null || parameter.get$ref() != null) &&
+			   !(List.of(methodAttributes.getMethodConsumes()).contains(APPLICATION_FORM_URLENCODED_VALUE) && ParameterIn.QUERY.toString().equals(parameter.getIn()));
 	}
 
 	/**
 	 * Build params parameter.
 	 *
-	 * @param parameterInfo  the parameter info
-	 * @param components     the components
-	 * @param requestMethod  the request method
-	 * @param jsonView       the json view
-	 * @param openApiVersion the open api version
+	 * @param parameterInfo    the parameter info
+	 * @param components       the components
+	 * @param requestMethod    the request method
+	 * @param methodAttributes the method attributes
+	 * @param openApiVersion   the open api version
 	 * @return the parameter
 	 */
 	public Parameter buildParams(ParameterInfo parameterInfo, Components components,
-			RequestMethod requestMethod, JsonView jsonView, String openApiVersion) {
+			RequestMethod requestMethod, MethodAttributes methodAttributes, String openApiVersion) {
 		MethodParameter methodParameter = parameterInfo.getMethodParameter();
 		if (parameterInfo.getParamType() != null) {
 			if (!ValueConstants.DEFAULT_NONE.equals(parameterInfo.getDefaultValue()))
 				parameterInfo.setRequired(false);
 			else
 				parameterInfo.setDefaultValue(null);
-			return this.buildParam(parameterInfo, components, jsonView);
+			return this.buildParam(parameterInfo, components, methodAttributes.getJsonViewAnnotation());
 		}
 		// By default
-		if (!isRequestBodyParam(requestMethod, parameterInfo, openApiVersion)) {
+		if (!isRequestBodyParam(requestMethod, parameterInfo, openApiVersion, methodAttributes)) {
 			parameterInfo.setRequired(!((DelegatingMethodParameter) methodParameter).isNotRequired() && !methodParameter.isOptional());
 			parameterInfo.setDefaultValue(null);
-			return this.buildParam(parameterInfo, components, jsonView);
+			return this.buildParam(parameterInfo, components, methodAttributes.getJsonViewAnnotation());
 		}
 		return null;
 	}
@@ -545,6 +657,12 @@ public abstract class AbstractRequestService {
 		if (StringUtils.isBlank(parameter.getIn()))
 			parameter.setIn(parameterInfo.getParamType());
 
+		// A parameter object property defaults to a query parameter. Assign it here (rather
+		// than only when finalizing the parameter map) so that mergeParameter does not collapse
+		// it into a same-named path/header parameter of the same operation (see issue #3270).
+		if (StringUtils.isBlank(parameter.getIn()) && parameterInfo.isParameterObject())
+			parameter.setIn(ParameterIn.QUERY.toString());
+
 		if (parameter.getRequired() == null)
 			parameter.setRequired(parameterInfo.isRequired());
 
@@ -555,15 +673,9 @@ public abstract class AbstractRequestService {
 			Schema<?> schema = parameterBuilder.calculateSchema(components, parameterInfo, null,
 					jsonView);
 			if (parameterInfo.getDefaultValue() != null && schema != null) {
-				Object defaultValue = parameterInfo.getDefaultValue();
-				// Cast default value
-				PrimitiveType primitiveType = PrimitiveType.fromTypeAndFormat(schema.getType(), schema.getFormat());
-				if (primitiveType != null) {
-					Schema<?> primitiveSchema = primitiveType.createProperty();
-					primitiveSchema.setDefault(parameterInfo.getDefaultValue());
-					defaultValue = primitiveSchema.getDefault();
-				}
-				schema.setDefault(defaultValue);
+				Object defaultValue = SpringDocAnnotationsUtils.castDefaultValue(schema, parameterInfo.getDefaultValue());
+				if (defaultValue != null)
+					schema.setDefault(defaultValue);
 			}
 			parameter.setSchema(schema);
 		}
@@ -573,18 +685,55 @@ public abstract class AbstractRequestService {
 	/**
 	 * Apply bean validator annotations.
 	 *
-	 * @param parameter   the parameter
-	 * @param annotations the annotations
+	 * @param methodParameter   the method parameter
+	 * @param parameter         the parameter
+	 * @param annotations       the annotations
+	 * @param isParameterObject the is parameter object
+	 * @param openapiVersion    the openapi version
 	 */
-	public void applyBeanValidatorAnnotations(final Parameter parameter, final List<Annotation> annotations) {
-		Map<String, Annotation> annos = new HashMap<>();
-		if (annotations != null)
-			annotations.forEach(annotation -> annos.put(annotation.annotationType().getSimpleName(), annotation));
-		boolean annotationExists = Arrays.stream(ANNOTATIONS_FOR_REQUIRED).anyMatch(annos::containsKey);
-		if (annotationExists)
+	public void applyBeanValidatorAnnotations(final MethodParameter methodParameter,
+											  final Parameter parameter,
+											  final List<Annotation> annotations,
+											  final boolean isParameterObject,
+											  String openapiVersion) {
+		boolean annotatedNotNull = annotations != null && SchemaUtils.annotatedNotNull(annotations);
+		if (annotatedNotNull && !isParameterObject) {
 			parameter.setRequired(true);
-		Schema<?> schema = parameter.getSchema();
-		applyValidationsToSchema(annos, schema);
+		}
+		if (annotations != null) {
+			Schema<?> schema = parameter.getSchema();
+			// The resolved schema may be a shared instance cached by swagger-core's
+			// ModelConverterContext (keyed by type). Applying constraints in place would leak
+			// them to every parameter of the same type, even across unrelated controllers (see
+			// issue #3270). Copy an inline schema before mutating it, but only when there is a
+			// constraint to apply, to avoid perturbing schemas that are left untouched.
+			if (schema != null && schema.get$ref() == null && SchemaUtils.hasValidationConstraints(annotations)) {
+				schema = cloneViaJson(schema, schema.getClass(), parameterBuilder.getObjectMapperProvider().jsonMapper());
+				parameter.setSchema(schema);
+			}
+			SchemaUtils.applyValidationsToSchema(schema, annotations, openapiVersion);
+			if (schema instanceof ArraySchema && methodParameter instanceof DelegatingMethodParameter delegatingMethodParameter) {
+				java.lang.reflect.AnnotatedType annotatedType = null;
+				if (isParameterObject) {
+					Field field = delegatingMethodParameter.getField();
+					if (field != null) {
+						annotatedType = field.getAnnotatedType();
+					}
+				}
+				else {
+					annotatedType = delegatingMethodParameter.getParameter().getAnnotatedType();
+				}
+				if (annotatedType instanceof AnnotatedParameterizedType paramType) {
+					java.lang.reflect.AnnotatedType[] typeArgs = paramType.getAnnotatedActualTypeArguments();
+					for (java.lang.reflect.AnnotatedType typeArg : typeArgs) {
+						List<Annotation> genericAnnotations = Arrays.stream(typeArg.getAnnotations()).toList();
+						Schema schemaItemsClone = cloneViaJson(schema.getItems(), Schema.class, ObjectMapperProvider.createJson(parameterBuilder.getPropertyResolverUtils().getSpringDocConfigProperties()));
+						schema.items(schemaItemsClone);
+						SchemaUtils.applyValidationsToSchema(schema.getItems(), genericAnnotations, openapiVersion);
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -596,22 +745,21 @@ public abstract class AbstractRequestService {
 	 */
 	public void applyBeanValidatorAnnotations(final RequestBody requestBody, final List<Annotation> annotations, boolean isOptional) {
 		Map<String, Annotation> annos = new HashMap<>();
-		boolean requestBodyRequired = false;
+		boolean springRequestBodyRequired = false;
+		boolean swaggerRequestBodyRequired = false;
 		if (!CollectionUtils.isEmpty(annotations)) {
 			annotations.forEach(annotation -> annos.put(annotation.annotationType().getSimpleName(), annotation));
-			requestBodyRequired = annotations.stream()
+			springRequestBodyRequired = annotations.stream()
 					.filter(annotation -> org.springframework.web.bind.annotation.RequestBody.class.equals(annotation.annotationType()))
 					.anyMatch(annotation -> ((org.springframework.web.bind.annotation.RequestBody) annotation).required());
+			swaggerRequestBodyRequired = annotations.stream()
+					.filter(annotation -> io.swagger.v3.oas.annotations.parameters.RequestBody.class.equals(annotation.annotationType()))
+					.anyMatch(annotation -> ((io.swagger.v3.oas.annotations.parameters.RequestBody) annotation).required());
 		}
-		boolean validationExists = Arrays.stream(ANNOTATIONS_FOR_REQUIRED).anyMatch(annos::containsKey);
+		boolean validationExists = SchemaUtils.annotatedNotNull(new ArrayList<>(annos.values()));
 
-		if (validationExists || (!isOptional && requestBodyRequired))
+		if (validationExists || (!isOptional && (springRequestBodyRequired || swaggerRequestBodyRequired)))
 			requestBody.setRequired(true);
-		Content content = requestBody.getContent();
-		for (MediaType mediaType : content.values()) {
-			Schema<?> schema = mediaType.getSchema();
-			applyValidationsToSchema(annos, schema);
-		}
 	}
 
 	/**
@@ -631,25 +779,14 @@ public abstract class AbstractRequestService {
 	public boolean isDefaultFlatParamObject() {
 		return defaultFlatParamObject;
 	}
-	
+
 	/**
-	 * Calculate size.
+	 * Gets parameter builder.
 	 *
-	 * @param annos  the annos
-	 * @param schema the schema
+	 * @return the parameter builder
 	 */
-	private void calculateSize(Map<String, Annotation> annos, Schema<?> schema) {
-		if (annos.containsKey(Size.class.getSimpleName())) {
-			Size size = (Size) annos.get(Size.class.getSimpleName());
-			if (OPENAPI_ARRAY_TYPE.equals(schema.getType())) {
-				schema.setMinItems(size.min());
-				schema.setMaxItems(size.max());
-			}
-			else if (OPENAPI_STRING_TYPE.equals(schema.getType())) {
-				schema.setMinLength(size.min());
-				schema.setMaxLength(size.max());
-			}
-		}
+	public GenericParameterService getParameterBuilder() {
+		return parameterBuilder;
 	}
 
 	/**
@@ -661,86 +798,61 @@ public abstract class AbstractRequestService {
 	private Map<ParameterId, io.swagger.v3.oas.annotations.Parameter> getApiParameters(Method method) {
 		Class<?> declaringClass = method.getDeclaringClass();
 
-		Set<io.swagger.v3.oas.annotations.Parameters> apiParametersDoc = AnnotatedElementUtils.findAllMergedAnnotations(method, io.swagger.v3.oas.annotations.Parameters.class);
-		LinkedHashMap<ParameterId, io.swagger.v3.oas.annotations.Parameter> apiParametersMap = apiParametersDoc.stream().flatMap(x -> Stream.of(x.value())).collect(Collectors.toMap(ParameterId::new, x -> x, (e1, e2) -> e2, LinkedHashMap::new));
+		Set<Parameters> apiParametersDoc = AnnotatedElementUtils.findAllMergedAnnotations(method, Parameters.class);
+		LinkedHashMap<ParameterId, io.swagger.v3.oas.annotations.Parameter> apiParametersMap = apiParametersDoc.stream()
+				.flatMap(x -> Stream.of(x.value())).collect(Collectors.toMap(ParameterId::new, x -> x, (e1, e2) -> e2, LinkedHashMap::new));
 
-		Set<io.swagger.v3.oas.annotations.Parameters> apiParametersDocDeclaringClass = AnnotatedElementUtils.findAllMergedAnnotations(declaringClass, io.swagger.v3.oas.annotations.Parameters.class);
-		LinkedHashMap<ParameterId, io.swagger.v3.oas.annotations.Parameter> apiParametersDocDeclaringClassMap = apiParametersDocDeclaringClass.stream().flatMap(x -> Stream.of(x.value())).collect(Collectors.toMap(ParameterId::new, x -> x, (e1, e2) -> e2, LinkedHashMap::new));
+		Set<Parameters> apiParametersDocDeclaringClass = AnnotatedElementUtils.findAllMergedAnnotations(declaringClass, Parameters.class);
+		LinkedHashMap<ParameterId, io.swagger.v3.oas.annotations.Parameter> apiParametersDocDeclaringClassMap = apiParametersDocDeclaringClass.stream()
+				.flatMap(x -> Stream.of(x.value())).collect(Collectors.toMap(ParameterId::new, x -> x, (e1, e2) -> e2, LinkedHashMap::new));
 		apiParametersMap.putAll(apiParametersDocDeclaringClassMap);
 
 		Set<io.swagger.v3.oas.annotations.Parameter> apiParameterDoc = AnnotatedElementUtils.findAllMergedAnnotations(method, io.swagger.v3.oas.annotations.Parameter.class);
-		LinkedHashMap<ParameterId, io.swagger.v3.oas.annotations.Parameter> apiParameterDocMap = apiParameterDoc.stream().collect(Collectors.toMap(ParameterId::new, x -> x, (e1, e2) -> e2, LinkedHashMap::new));
+		LinkedHashMap<ParameterId, io.swagger.v3.oas.annotations.Parameter> apiParameterDocMap = apiParameterDoc.stream()
+				.collect(Collectors.toMap(ParameterId::new, x -> x, (e1, e2) -> e2, LinkedHashMap::new));
 		apiParametersMap.putAll(apiParameterDocMap);
 
 		Set<io.swagger.v3.oas.annotations.Parameter> apiParameterDocDeclaringClass = AnnotatedElementUtils.findAllMergedAnnotations(declaringClass, io.swagger.v3.oas.annotations.Parameter.class);
-		LinkedHashMap<ParameterId, io.swagger.v3.oas.annotations.Parameter> apiParameterDocDeclaringClassMap = apiParameterDocDeclaringClass.stream().collect(Collectors.toMap(ParameterId::new, x -> x, (e1, e2) -> e2, LinkedHashMap::new));
+		LinkedHashMap<ParameterId, io.swagger.v3.oas.annotations.Parameter> apiParameterDocDeclaringClassMap = apiParameterDocDeclaringClass.stream()
+				.collect(Collectors.toMap(ParameterId::new, x -> x, (e1, e2) -> e2, LinkedHashMap::new));
 		apiParametersMap.putAll(apiParameterDocDeclaringClassMap);
 
 		return apiParametersMap;
 	}
 
 	/**
-	 * Apply validations to schema.
-	 *
-	 * @param annos  the annos
-	 * @param schema the schema
-	 */
-	private void applyValidationsToSchema(Map<String, Annotation> annos, Schema<?> schema) {
-		if (annos.containsKey(Min.class.getSimpleName())) {
-			Min min = (Min) annos.get(Min.class.getSimpleName());
-			schema.setMinimum(BigDecimal.valueOf(min.value()));
-		}
-		if (annos.containsKey(Max.class.getSimpleName())) {
-			Max max = (Max) annos.get(Max.class.getSimpleName());
-			schema.setMaximum(BigDecimal.valueOf(max.value()));
-		}
-		calculateSize(annos, schema);
-		if (annos.containsKey(DecimalMin.class.getSimpleName())) {
-			DecimalMin min = (DecimalMin) annos.get(DecimalMin.class.getSimpleName());
-			if (min.inclusive())
-				schema.setMinimum(BigDecimal.valueOf(Double.parseDouble(min.value())));
-			else
-				schema.setExclusiveMinimum(true);
-		}
-		if (annos.containsKey(DecimalMax.class.getSimpleName())) {
-			DecimalMax max = (DecimalMax) annos.get(DecimalMax.class.getSimpleName());
-			if (max.inclusive())
-				schema.setMaximum(BigDecimal.valueOf(Double.parseDouble(max.value())));
-			else
-				schema.setExclusiveMaximum(true);
-		}
-		if (annos.containsKey(POSITIVE_OR_ZERO))
-			schema.setMinimum(BigDecimal.ZERO);
-		if (annos.containsKey(NEGATIVE_OR_ZERO))
-			schema.setMaximum(BigDecimal.ZERO);
-		if (annos.containsKey(Pattern.class.getSimpleName())) {
-			Pattern pattern = (Pattern) annos.get(Pattern.class.getSimpleName());
-			schema.setPattern(pattern.regexp());
-		}
-	}
-
-	/**
 	 * Is RequestBody param boolean.
 	 *
-	 * @param requestMethod  the request method
-	 * @param parameterInfo  the parameter info
-	 * @param openApiVersion the open api version
+	 * @param requestMethod    the request method
+	 * @param parameterInfo    the parameter info
+	 * @param openApiVersion   the open api version
+	 * @param methodAttributes the method attributes
 	 * @return the boolean
 	 */
-	private boolean isRequestBodyParam(RequestMethod requestMethod, ParameterInfo parameterInfo, String openApiVersion) {
+	private boolean isRequestBodyParam(RequestMethod requestMethod, ParameterInfo parameterInfo, String openApiVersion, MethodAttributes methodAttributes) {
 		MethodParameter methodParameter = parameterInfo.getMethodParameter();
 		DelegatingMethodParameter delegatingMethodParameter = (DelegatingMethodParameter) methodParameter;
 		boolean isBodyAllowed = !RequestMethod.GET.equals(requestMethod) || OpenApiVersion.OPENAPI_3_1.getVersion().equals(openApiVersion);
 
 		return (isBodyAllowed && (parameterInfo.getParameterModel() == null || parameterInfo.getParameterModel().getIn() == null) && !delegatingMethodParameter.isParameterObject())
 				&&
-				((methodParameter.getParameterAnnotation(io.swagger.v3.oas.annotations.parameters.RequestBody.class) != null
-						|| methodParameter.getParameterAnnotation(org.springframework.web.bind.annotation.RequestBody.class) != null
-						|| AnnotatedElementUtils.findMergedAnnotation(Objects.requireNonNull(methodParameter.getMethod()), io.swagger.v3.oas.annotations.parameters.RequestBody.class) != null)
+				(checkRequestBodyAnnotation(methodParameter)
 						|| checkOperationRequestBody(methodParameter)
 						|| checkFile(methodParameter)
+						|| List.of(methodAttributes.getMethodConsumes()).contains(MULTIPART_FORM_DATA_VALUE));
+	}
 
-				);
+	/**
+	 * Checks whether Swagger's or Spring's RequestBody annotation is present on a parameter or method
+	 *
+	 * @param methodParameter the method parameter
+	 * @return the boolean
+	 */
+	private boolean checkRequestBodyAnnotation(MethodParameter methodParameter) {
+		return methodParameter.hasParameterAnnotation(org.springframework.web.bind.annotation.RequestBody.class)
+				|| methodParameter.hasParameterAnnotation(io.swagger.v3.oas.annotations.parameters.RequestBody.class)
+				|| AnnotatedElementUtils.isAnnotated(Objects.requireNonNull(methodParameter.getParameter()), io.swagger.v3.oas.annotations.parameters.RequestBody.class)
+				|| AnnotatedElementUtils.isAnnotated(Objects.requireNonNull(methodParameter.getMethod()), io.swagger.v3.oas.annotations.parameters.RequestBody.class);
 	}
 
 	/**
@@ -750,9 +862,9 @@ public abstract class AbstractRequestService {
 	 * @return the boolean
 	 */
 	private boolean checkFile(MethodParameter methodParameter) {
-		if (methodParameter.getParameterAnnotation(org.springframework.web.bind.annotation.RequestPart.class) != null)
+		if (methodParameter.getParameterAnnotation(RequestPart.class) != null)
 			return true;
-		else if (methodParameter.getParameterAnnotation(org.springframework.web.bind.annotation.RequestParam.class) != null) {
+		else if (methodParameter.getParameterAnnotation(RequestParam.class) != null) {
 			return isFile(methodParameter.getParameterType());
 		}
 		return false;
@@ -767,7 +879,7 @@ public abstract class AbstractRequestService {
 	private boolean checkOperationRequestBody(MethodParameter methodParameter) {
 		if (AnnotatedElementUtils.findMergedAnnotation(Objects.requireNonNull(methodParameter.getMethod()), io.swagger.v3.oas.annotations.Operation.class) != null) {
 			io.swagger.v3.oas.annotations.Operation operation = AnnotatedElementUtils.findMergedAnnotation(Objects.requireNonNull(methodParameter.getMethod()), io.swagger.v3.oas.annotations.Operation.class);
-			if(operation!=null){
+			if (operation != null) {
 				io.swagger.v3.oas.annotations.parameters.RequestBody requestBody = operation.requestBody();
 				if (StringUtils.isNotBlank(requestBody.description()))
 					return true;
@@ -784,5 +896,23 @@ public abstract class AbstractRequestService {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Gets optional delegating method parameter customizers.
+	 *
+	 * @return the optional delegating method parameter customizers
+	 */
+	public Optional<List<DelegatingMethodParameterCustomizer>> getOptionalDelegatingMethodParameterCustomizers() {
+		return optionalDelegatingMethodParameterCustomizers;
+	}
+
+	/**
+	 * Gets method parameter pojo extractor.
+	 *
+	 * @return the method parameter pojo extractor
+	 */
+	public MethodParameterPojoExtractor getMethodParameterPojoExtractor() {
+		return methodParameterPojoExtractor;
 	}
 }

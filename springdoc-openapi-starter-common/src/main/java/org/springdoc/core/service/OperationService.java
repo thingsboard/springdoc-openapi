@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -27,7 +29,6 @@ package org.springdoc.core.service;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -132,7 +133,7 @@ public class OperationService {
 			operation.setDescription(propertyResolverUtils.resolve(apiOperation.description(), locale));
 
 		if (StringUtils.isNotBlank(apiOperation.operationId()))
-			operation.setOperationId(getOperationId(apiOperation.operationId(), openAPI));
+			operation.setOperationId(apiOperation.operationId());
 
 		if (apiOperation.deprecated())
 			operation.setDeprecated(apiOperation.deprecated());
@@ -239,33 +240,17 @@ public class OperationService {
 	 */
 	private void setPathItemOperation(PathItem pathItemObject, String method, Operation operation) {
 		switch (method) {
-			case POST_METHOD:
-				pathItemObject.post(operation);
-				break;
-			case GET_METHOD:
-				pathItemObject.get(operation);
-				break;
-			case DELETE_METHOD:
-				pathItemObject.delete(operation);
-				break;
-			case PUT_METHOD:
-				pathItemObject.put(operation);
-				break;
-			case PATCH_METHOD:
-				pathItemObject.patch(operation);
-				break;
-			case TRACE_METHOD:
-				pathItemObject.trace(operation);
-				break;
-			case HEAD_METHOD:
-				pathItemObject.head(operation);
-				break;
-			case OPTIONS_METHOD:
-				pathItemObject.options(operation);
-				break;
-			default:
-				// Do nothing here
-				break;
+			case POST_METHOD -> pathItemObject.post(operation);
+			case GET_METHOD -> pathItemObject.get(operation);
+			case DELETE_METHOD -> pathItemObject.delete(operation);
+			case PUT_METHOD -> pathItemObject.put(operation);
+			case PATCH_METHOD -> pathItemObject.patch(operation);
+			case TRACE_METHOD -> pathItemObject.trace(operation);
+			case HEAD_METHOD -> pathItemObject.head(operation);
+			case OPTIONS_METHOD -> pathItemObject.options(operation);
+			default -> {
+				// best effort with regard to supported operations
+			}
 		}
 	}
 
@@ -307,82 +292,6 @@ public class OperationService {
 	}
 
 	/**
-	 * Gets operation id.
-	 *
-	 * @param operationId the operation id
-	 * @param openAPI     the open api
-	 * @return the operation id
-	 */
-	public String getOperationId(String operationId, OpenAPI openAPI) {
-		boolean operationIdUsed = existOperationId(operationId, openAPI);
-		String operationIdToFind = null;
-		int counter = 0;
-		while (operationIdUsed) {
-			operationIdToFind = String.format("%s_%d", operationId, ++counter);
-			operationIdUsed = existOperationId(operationIdToFind, openAPI);
-		}
-		if (operationIdToFind != null) {
-			operationId = operationIdToFind;
-		}
-		return operationId;
-	}
-
-	/**
-	 * Exist operation id boolean.
-	 *
-	 * @param operationId the operation id
-	 * @param openAPI     the open api
-	 * @return the boolean
-	 */
-	private boolean existOperationId(String operationId, OpenAPI openAPI) {
-		if (openAPI == null) {
-			return false;
-		}
-		if (openAPI.getPaths() == null || openAPI.getPaths().isEmpty()) {
-			return false;
-		}
-		for (PathItem path : openAPI.getPaths().values()) {
-			Set<String> pathOperationIds = extractOperationIdFromPathItem(path);
-			if (pathOperationIds.contains(operationId)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Extract operation id from path item set.
-	 *
-	 * @param path the path
-	 * @return the set
-	 */
-	private Set<String> extractOperationIdFromPathItem(PathItem path) {
-		Set<String> ids = new HashSet<>();
-		if (path.getGet() != null && StringUtils.isNotBlank(path.getGet().getOperationId())) {
-			ids.add(path.getGet().getOperationId());
-		}
-		if (path.getPost() != null && StringUtils.isNotBlank(path.getPost().getOperationId())) {
-			ids.add(path.getPost().getOperationId());
-		}
-		if (path.getPut() != null && StringUtils.isNotBlank(path.getPut().getOperationId())) {
-			ids.add(path.getPut().getOperationId());
-		}
-		if (path.getDelete() != null && StringUtils.isNotBlank(path.getDelete().getOperationId())) {
-			ids.add(path.getDelete().getOperationId());
-		}
-		if (path.getOptions() != null && StringUtils.isNotBlank(path.getOptions().getOperationId())) {
-			ids.add(path.getOptions().getOperationId());
-		}
-		if (path.getHead() != null && StringUtils.isNotBlank(path.getHead().getOperationId())) {
-			ids.add(path.getHead().getOperationId());
-		}
-		if (path.getPatch() != null && StringUtils.isNotBlank(path.getPatch().getOperationId())) {
-			ids.add(path.getPatch().getOperationId());
-		}
-		return ids;
-	}
-
-	/**
 	 * Gets api responses.
 	 *
 	 * @param responses        the responses
@@ -412,7 +321,7 @@ public class OperationService {
 
 			buildResponseContent(methodAttributes, components, classProduces, methodProduces, apiResponsesOp, response, apiResponseObject);
 
-			AnnotationsUtils.getHeaders(response.headers(), null, propertyResolverUtils.isOpenapi31()).ifPresent(apiResponseObject::headers);
+			SpringDocAnnotationsUtils.getHeaders(response.headers(), components, null, propertyResolverUtils.isOpenapi31()).ifPresent(apiResponseObject::headers);
 			// Make schema as string if empty
 			calculateHeader(apiResponseObject);
 			if (isResponseObject(apiResponseObject)) {
@@ -478,8 +387,8 @@ public class OperationService {
 	 * Sets description.
 	 *
 	 * @param response          the response
-	 * @param response          the javadocReturn
 	 * @param apiResponseObject the api response object
+	 * @param javadocReturn     the javadoc return
 	 */
 	private void setDescription(io.swagger.v3.oas.annotations.responses.ApiResponse response,
 			ApiResponse apiResponseObject, String javadocReturn) {
@@ -598,22 +507,7 @@ public class OperationService {
 	}
 
 	/**
-	 * Gets operation id.
-	 *
-	 * @param operationId    the operation id
-	 * @param oldOperationId the old operation id
-	 * @param openAPI        the open api
-	 * @return the operation id
-	 */
-	public String getOperationId(String operationId, String oldOperationId, OpenAPI openAPI) {
-		if (StringUtils.isNotBlank(oldOperationId))
-			return this.getOperationId(oldOperationId, openAPI);
-		else
-			return this.getOperationId(operationId, openAPI);
-	}
-
-	/**
-	 * Merge operation operation.
+	 * Merge operation.
 	 *
 	 * @param operation      the operation
 	 * @param operationModel the operation model
@@ -645,5 +539,14 @@ public class OperationService {
 	 */
 	public JavadocProvider getJavadocProvider() {
 		return parameterBuilder.getJavadocProvider();
+	}
+
+	/**
+	 * Gets propertyResolverUtils
+	 *
+	 * @return propertyResolverUtils property resolver utils
+	 */
+	public PropertyResolverUtils getPropertyResolverUtils() {
+		return parameterBuilder.getPropertyResolverUtils();
 	}
 }

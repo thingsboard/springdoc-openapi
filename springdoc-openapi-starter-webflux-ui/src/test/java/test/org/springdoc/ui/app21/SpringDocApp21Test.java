@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.springframework.test.context.TestPropertySource;
 public class SpringDocApp21Test extends AbstractSpringDocTest {
 
 	@Test
-	public void testUseRootPath() {
+	void testUseRootPath() {
 		webTestClient.get().uri("/").exchange()
 				.expectStatus().is3xxRedirection();
 		webTestClient.get().uri("/swagger-ui.html").exchange()

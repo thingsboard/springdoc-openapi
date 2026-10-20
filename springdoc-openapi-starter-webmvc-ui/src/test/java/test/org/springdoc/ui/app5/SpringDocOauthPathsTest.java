@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class SpringDocOauthPathsTest extends AbstractSpringDocTest {
 
 	@Test
-	public void oauth2_redirect_url_calculated() throws Exception {
+	void oauth2_redirect_url_calculated() throws Exception {
 		mockMvc.perform(get("/v3/api-docs/swagger-config"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("oauth2RedirectUrl", equalTo("http://localhost/swagger-ui/oauth2-redirect.html")));

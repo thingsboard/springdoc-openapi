@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -30,20 +32,19 @@ import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.properties.SwaggerUiConfigParameters;
 import org.springdoc.core.properties.SwaggerUiConfigProperties;
 import org.springdoc.core.providers.SpringWebProvider;
-import org.springdoc.core.utils.SpringDocUtils;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import static org.springdoc.core.utils.Constants.MVC_SERVLET_PATH;
-import static org.springdoc.core.utils.Constants.SWAGGER_CONFIG_FILE;
 import static org.springdoc.core.utils.Constants.SWAGGER_UI_PATH;
-import static org.springframework.util.AntPathMatcher.DEFAULT_PATH_SEPARATOR;
 
 /**
  * The type Swagger welcome.
+ *
  * @author bnasslahsen
  */
 @Controller
@@ -52,7 +53,7 @@ public class SwaggerWelcomeWebMvc extends SwaggerWelcomeCommon {
 	/**
 	 * The Spring web provider.
 	 */
-	private final SpringWebProvider springWebProvider;
+	private final ObjectProvider<SpringWebProvider> springWebProvider;
 
 	/**
 	 * The Mvc servlet path.
@@ -62,28 +63,17 @@ public class SwaggerWelcomeWebMvc extends SwaggerWelcomeCommon {
 	private String mvcServletPath;
 
 	/**
-	 * The Path prefix.
-	 */
-	private String pathPrefix;
-
-	/**
 	 * Instantiates a new Swagger welcome web mvc.
-	 * @param swaggerUiConfig the swagger ui config
+	 *
+	 * @param swaggerUiConfig           the swagger ui config
 	 * @param springDocConfigProperties the spring doc config properties
-	 * @param swaggerUiConfigParameters the swagger ui config parameters
-	 * @param springWebProvider the spring web provider
+	 * @param springWebProvider         the spring web provider
 	 */
-	public SwaggerWelcomeWebMvc(SwaggerUiConfigProperties swaggerUiConfig, SpringDocConfigProperties springDocConfigProperties, SwaggerUiConfigParameters swaggerUiConfigParameters, SpringWebProvider springWebProvider) {
-		super(swaggerUiConfig, springDocConfigProperties, swaggerUiConfigParameters);
+	public SwaggerWelcomeWebMvc(SwaggerUiConfigProperties swaggerUiConfig, SpringDocConfigProperties springDocConfigProperties, ObjectProvider<SpringWebProvider> springWebProvider) {
+		super(swaggerUiConfig, springDocConfigProperties);
 		this.springWebProvider = springWebProvider;
 	}
 
-	/**
-	 * Redirect to ui string.
-	 *
-	 * @param request the request
-	 * @return the string
-	 */
 	@Operation(hidden = true)
 	@GetMapping(SWAGGER_UI_PATH)
 	@Override
@@ -91,58 +81,16 @@ public class SwaggerWelcomeWebMvc extends SwaggerWelcomeCommon {
 		return super.redirectToUi(request);
 	}
 
-	/**
-	 * Calculate ui root path.
-	 *
-	 * @param sbUrls the sb urls
-	 */
 	@Override
-	protected void calculateUiRootPath(StringBuilder... sbUrls) {
-		StringBuilder sbUrl = new StringBuilder();
-		if (SpringDocUtils.isValidPath(mvcServletPath))
-			sbUrl.append(mvcServletPath);
-		calculateUiRootCommon(sbUrl, sbUrls);
-	}
-
-	/**
-	 * Build url string.
-	 *
-	 * @param contextPath the context path
-	 * @param docsUrl the docs url
-	 * @return the string
-	 */
-	@Override
-	protected String buildUrl(String contextPath, final String docsUrl) {
-		if (SpringDocUtils.isValidPath(mvcServletPath))
-			contextPath += mvcServletPath;
-		return super.buildUrl(contextPath, docsUrl);
-	}
-
-	/**
-	 * Build api doc url string.
-	 *
-	 * @return the string
-	 */
-	@Override
-	protected String buildApiDocUrl() {
-		return buildUrlWithContextPath(springDocConfigProperties.getApiDocs().getPath());
-	}
-
-	@Override
-	protected String buildUrlWithContextPath(String swaggerUiUrl) {
-		if (this.pathPrefix == null)
-			this.pathPrefix = springWebProvider.findPathPrefix(springDocConfigProperties);
-		return buildUrl(contextPath + pathPrefix, swaggerUiUrl);
-	}
-
-	/**
-	 * Build swagger config url string.
-	 *
-	 * @return the string
-	 */
-	@Override
-	protected String buildSwaggerConfigUrl() {
-		return apiDocsUrl + DEFAULT_PATH_SEPARATOR + SWAGGER_CONFIG_FILE;
+	protected String buildUrlWithContextPath(SwaggerUiConfigParameters swaggerUiConfigParameters, String swaggerUiUrl) {
+		if (swaggerUiConfigParameters.getPathPrefix() == null)
+			swaggerUiConfigParameters.setPathPrefix(springWebProvider.getIfAvailable().findPathPrefix(springDocConfigProperties));
+		if (swaggerUiUrl.startsWith(swaggerUiConfigParameters.getPathPrefix())) {
+			return buildUrl(swaggerUiConfigParameters.getContextPath(), swaggerUiUrl);
+		}
+		else {
+			return buildUrl(swaggerUiConfigParameters.getContextPath() + swaggerUiConfigParameters.getPathPrefix(), swaggerUiUrl);
+		}
 	}
 
 }

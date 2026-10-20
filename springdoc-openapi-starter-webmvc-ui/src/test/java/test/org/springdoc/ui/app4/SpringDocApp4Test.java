@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 package test.org.springdoc.ui.app4;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import test.org.springdoc.ui.AbstractSpringDocTest;
 
 import org.springframework.test.context.TestPropertySource;
@@ -27,20 +28,44 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.context.annotation.Bean;
 
 @TestPropertySource(properties = { "springdoc.swagger-ui.groups-order=DESC", "springdoc.swagger-ui.urlsPrimaryName=pets" })
 public class SpringDocApp4Test extends AbstractSpringDocTest {
 
 	@Test
-	public void swagger_config_for_multiple_groups() throws Exception {
+	void swagger_config_for_multiple_groups() throws Exception {
 		mockMvc.perform(get("/v3/api-docs/swagger-config"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("configUrl", equalTo("/v3/api-docs/swagger-config")))
 				.andExpect(jsonPath("url").doesNotExist())
-				.andExpect(jsonPath("urls[0].url", equalTo("/v3/api-docs/stores")))
-				.andExpect(jsonPath("urls[0].name", equalTo("stores")))
-				.andExpect(jsonPath("urls[1].url", equalTo("/v3/api-docs/pets")))
-				.andExpect(jsonPath("urls[1].name", equalTo("The pets")))
+				.andExpect(jsonPath("urls[1].url", equalTo("/v3/api-docs/stores")))
+				.andExpect(jsonPath("urls[1].name", equalTo("stores")))
+				.andExpect(jsonPath("urls[0].url", equalTo("/v3/api-docs/pets")))
+				.andExpect(jsonPath("urls[0].name", equalTo("zpets")))
 				.andExpect(jsonPath("$['urls.primaryName']", equalTo("pets")));
+	}
+
+	@SpringBootApplication
+	static class SpringDocTestApp {
+		@Bean
+		public GroupedOpenApi storeOpenApi() {
+			String[] paths = { "/store/**" };
+			return GroupedOpenApi.builder()
+					.group("stores")
+					.pathsToMatch(paths)
+					.build();
+		}
+
+		@Bean
+		public GroupedOpenApi groupOpenApi() {
+			String[] paths = { "/pet/**" };
+			return GroupedOpenApi.builder()
+					.group("pets")
+					.displayName("zpets")
+					.pathsToMatch(paths)
+					.build();
+		}
 	}
 }

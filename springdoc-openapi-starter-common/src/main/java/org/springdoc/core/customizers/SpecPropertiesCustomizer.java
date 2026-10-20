@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -24,24 +26,32 @@
 
 package org.springdoc.core.customizers;
 
-import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.Paths;
+import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.security.OAuthFlows;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.security.SecurityScheme.In;
+import io.swagger.v3.oas.models.security.SecurityScheme.Type;
 import org.apache.commons.lang3.StringUtils;
+import org.springdoc.core.properties.SpringDocConfigProperties;
 
-import org.springframework.core.env.PropertyResolver;
 import org.springframework.util.CollectionUtils;
-
-import static org.springdoc.core.utils.Constants.SPRINGDOC_SPEC_PROPERTIES_PREFIX;
 
 /**
  * Allows externalizing strings in generated openapi schema via properties that follow
@@ -81,133 +91,303 @@ import static org.springdoc.core.utils.Constants.SPRINGDOC_SPEC_PROPERTIES_PREFI
  *
  * @author Anton Tkachenko tkachenkoas@gmail.com
  * @author bnasslahsen
+ * @author Huijin Hong
  */
 public class SpecPropertiesCustomizer implements GlobalOpenApiCustomizer {
 
 	/**
-	 * The constant DESCRIPTION.
+	 * The Open api properties.
 	 */
-	private static final String DESCRIPTION = ".description";
-
-	/**
-	 * The Property resolver.
-	 */
-	private final PropertyResolver propertyResolver;
-
-	/**
-	 * The Property prefix.
-	 */
-	private final String propertyPrefix;
+	private final OpenAPI openApiProperties;
 
 	/**
 	 * Instantiates a new Spec properties customizer.
 	 *
-	 * @param resolverUtils the resolver utils
+	 * @param springDocConfigProperties the spring doc config properties
 	 */
-	public SpecPropertiesCustomizer(PropertyResolver resolverUtils) {
-		this.propertyResolver = resolverUtils;
-		this.propertyPrefix = SPRINGDOC_SPEC_PROPERTIES_PREFIX;
+	public SpecPropertiesCustomizer(SpringDocConfigProperties springDocConfigProperties) {
+		this.openApiProperties = springDocConfigProperties.getOpenApi();
 	}
 
 	/**
 	 * Instantiates a new Spec properties customizer.
 	 *
-	 * @param propertyResolver the property resolver
-	 * @param groupName        the group name
+	 * @param openApiProperties the open api properties
 	 */
-	public SpecPropertiesCustomizer(PropertyResolver propertyResolver, String groupName) {
-		this.propertyResolver = propertyResolver;
-		this.propertyPrefix = SPRINGDOC_SPEC_PROPERTIES_PREFIX + groupName + ".";
+	public SpecPropertiesCustomizer(OpenAPI openApiProperties) {
+		this.openApiProperties = openApiProperties;
 	}
 
 	@Override
 	public void customise(OpenAPI openApi) {
-		setOperationInfoProperties(openApi);
-		setComponentsProperties(openApi);
-		setPathsProperties(openApi);
+		customizeOpenApi(openApi, openApiProperties);
 	}
 
 	/**
-	 * Sets operation info properties.
+	 * Customize open api.
 	 *
-	 * @param openApi the open api
+	 * @param openApi           the open api
+	 * @param openApiProperties the open api properties
 	 */
-	private void setOperationInfoProperties(OpenAPI openApi) {
-		if (openApi.getInfo() == null) {
-			openApi.setInfo(new Info());
-		}
-		Info info = openApi.getInfo();
-		resolveString(info::setTitle, "info.title");
-		resolveString(info::setDescription, "info.description");
-		resolveString(info::setVersion, "info.version");
-		resolveString(info::setTermsOfService, "info.termsOfService");
-	}
+	private void customizeOpenApi(OpenAPI openApi, OpenAPI openApiProperties) {
+		if (openApiProperties != null) {
+			Info infoProperties = openApiProperties.getInfo();
+			if (infoProperties != null)
+				customizeInfo(openApi, infoProperties);
 
-	/**
-	 * Sets paths properties.
-	 *
-	 * @param openApi the open api
-	 */
-	private void setPathsProperties(OpenAPI openApi) {
-		Paths paths = openApi.getPaths();
-		if (CollectionUtils.isEmpty(paths.values())) {
-			return;
-		}
-		for (PathItem pathItem : paths.values()) {
-			List<Operation> operations = pathItem.readOperations();
-			for (Operation operation : operations) {
-				String operationId = operation.getOperationId();
-				String operationNode = MessageFormat.format("paths.{0}", operationId);
-				resolveString(operation::setDescription, operationNode + DESCRIPTION);
+			Components componentsProperties = openApiProperties.getComponents();
+			if (componentsProperties != null)
+				customizeComponents(openApi, componentsProperties);
 
-				resolveString(operation::setSummary, operationNode + ".summary");
+			Paths pathsProperties = openApiProperties.getPaths();
+			if (pathsProperties != null)
+				customizePaths(openApi, pathsProperties);
+
+			List<SecurityRequirement> securityRequirementsProperties = openApiProperties.getSecurity();
+			if (!CollectionUtils.isEmpty(securityRequirementsProperties)) {
+				customizeSecurity(openApi, securityRequirementsProperties);
+			}
+			if (!CollectionUtils.isEmpty(openApiProperties.getServers())) {
+				openApi.setServers(new ArrayList<>(openApiProperties.getServers()));
+			}
+
+			ExternalDocumentation externalDocumentationProperties = openApiProperties.getExternalDocs();
+			if (externalDocumentationProperties != null) {
+				customizeExternalDocs(openApi, externalDocumentationProperties);
 			}
 		}
 	}
 
 	/**
-	 * Sets components properties.
+	 * Customized external docs.
 	 *
 	 * @param openApi the open api
+	 * @param externalDocumentationProperties the external documentation
 	 */
-	private void setComponentsProperties(OpenAPI openApi) {
+	private void customizeExternalDocs(OpenAPI openApi, ExternalDocumentation externalDocumentationProperties) {
+		ExternalDocumentation externalDocumentation = openApi.getExternalDocs();
+		if (externalDocumentation != null) {
+			resolveString(externalDocumentation::description, externalDocumentationProperties::getDescription);
+			resolveString(externalDocumentation::url, externalDocumentationProperties::getUrl);
+		} else {
+			openApi.setExternalDocs(externalDocumentationProperties);
+		}
+	}
+
+	/**
+	 * Customize security.
+	 *
+	 * @param openApi                        the open api
+	 * @param securityRequirementsProperties the security requirements
+	 */
+	private void customizeSecurity(OpenAPI openApi, List<SecurityRequirement> securityRequirementsProperties) {
+		List<SecurityRequirement> securityRequirements = openApi.getSecurity();
+		if (CollectionUtils.isEmpty(securityRequirements)) {
+			openApi.setSecurity(securityRequirementsProperties);
+		}
+		else {
+			securityRequirementsProperties.forEach(securityRequirement -> {
+				if (!securityRequirements.contains(securityRequirement)) {
+					securityRequirements.add(securityRequirement);
+				}
+			});
+		}
+	}
+
+	/**
+	 * Customize paths.
+	 *
+	 * @param openApi         the open api
+	 * @param pathsProperties the paths properties
+	 */
+	private void customizePaths(OpenAPI openApi, Paths pathsProperties) {
+		Paths paths = openApi.getPaths();
+		if (paths == null) {
+			openApi.paths(pathsProperties);
+		}
+		else {
+			paths.forEach((path, pathItem) -> {
+				if (path.startsWith("/")) {
+					path = path.substring(1); // Remove the leading '/'
+				}
+				PathItem pathItemProperties = pathsProperties.get(path);
+				if (pathItemProperties != null) {
+					resolveString(pathItem::description, pathItemProperties::getDescription);
+					resolveString(pathItem::summary, pathItemProperties::getSummary);
+
+					Map<HttpMethod, Operation> operationMap = pathItem.readOperationsMap();
+					Map<HttpMethod, Operation> operationMapProperties = pathItemProperties.readOperationsMap();
+
+					operationMapProperties.forEach((httpMethod, operationProperties) -> {
+						Operation operationToCustomize = operationMap.get(httpMethod);
+						if (operationToCustomize != null) {
+							resolveString(operationToCustomize::description, operationProperties::getDescription);
+							resolveString(operationToCustomize::summary, operationProperties::getSummary);
+							resolveSet(operationToCustomize::tags, operationProperties::getTags);
+						}
+					});
+				}
+			});
+		}
+	}
+
+	/**
+	 * Customize components.
+	 *
+	 * @param openApi              the open api
+	 * @param componentsProperties the components properties
+	 */
+	private void customizeComponents(OpenAPI openApi, Components componentsProperties) {
 		Components components = openApi.getComponents();
 		if (components == null || CollectionUtils.isEmpty(components.getSchemas())) {
-			return;
+			openApi.components(componentsProperties);
 		}
-
-		for (Schema componentSchema : components.getSchemas().values()) {
-			// set component description
-			String schemaPropertyPrefix = MessageFormat.format("components.schemas.{0}", componentSchema.getName());
-			resolveString(componentSchema::setDescription, schemaPropertyPrefix + DESCRIPTION);
-			Map<String, Schema> properties = componentSchema.getProperties();
-
-			if (CollectionUtils.isEmpty(properties)) {
-				continue;
+		else {
+			Map<String, Schema> schemaMap = components.getSchemas();
+			schemaMap.forEach((key, schema) -> {
+				if (!CollectionUtils.isEmpty(componentsProperties.getSchemas())) {
+					Schema schemaProperties = componentsProperties.getSchemas().get(key);
+					if (schemaProperties != null) {
+						resolveString(schema::setDescription, schemaProperties::getDescription);
+						Map<String, Schema> properties = schema.getProperties();
+						if (CollectionUtils.isEmpty(properties)) {
+							return;
+						}
+						properties.forEach((propKey, propSchema) -> {
+							Schema propSchemaProperties = (Schema) schemaProperties.getProperties().get(propKey);
+							if (propSchemaProperties != null) {
+								resolveString(propSchema::description, propSchemaProperties::getDescription);
+								resolveString(propSchema::title, propSchemaProperties::getTitle);
+								resolveString(propSchema::example, propSchemaProperties::getExample);
+							}
+						});
+					}
+				}
+			});
+			Map<String, SecurityScheme> securitySchemeMap = components.getSecuritySchemes();
+			if (CollectionUtils.isEmpty(securitySchemeMap)) {
+				components.setSecuritySchemes(componentsProperties.getSecuritySchemes());
 			}
-
-			for (Schema propSchema : properties.values()) {
-				String propertyNode = MessageFormat.format("components.schemas.{0}.properties.{1}",
-						componentSchema.getName(), propSchema.getName());
-
-				resolveString(propSchema::setDescription, propertyNode + DESCRIPTION);
-				resolveString(propSchema::setExample, propertyNode + ".example");
+			else {
+				securitySchemeMap.forEach((key, securityScheme) -> {
+					SecurityScheme securitySchemeToCustomize = components.getSecuritySchemes().get(key);
+					if (securitySchemeToCustomize != null) {
+						resolveString(securitySchemeToCustomize::description, securityScheme::getDescription);
+						resolveString(securitySchemeToCustomize::name, securityScheme::getName);
+						resolveType(securitySchemeToCustomize::type, securityScheme::getType);
+						resolveIn(securitySchemeToCustomize::in, securityScheme::getIn);
+						resolveString(securitySchemeToCustomize::scheme, securityScheme::getScheme);
+						resolveString(securitySchemeToCustomize::bearerFormat, securityScheme::getBearerFormat);
+						resolveString(securitySchemeToCustomize::openIdConnectUrl, securityScheme::getOpenIdConnectUrl);
+						resolveOAuthFlows(securitySchemeToCustomize::flows, securityScheme::getFlows);
+						resolveString(securitySchemeToCustomize::$ref, securityScheme::get$ref);
+					}
+				});
 			}
 		}
 	}
+
+	/**
+	 * Customize info.
+	 *
+	 * @param openApi        the open api
+	 * @param infoProperties the info properties
+	 */
+	private void customizeInfo(OpenAPI openApi, Info infoProperties) {
+		Info info = openApi.getInfo();
+		if (info != null) {
+			resolveString(info::title, infoProperties::getTitle);
+			resolveString(info::description, infoProperties::getDescription);
+			resolveString(info::version, infoProperties::getVersion);
+			resolveString(info::termsOfService, infoProperties::getTermsOfService);
+			resolveString(info::summary, infoProperties::getSummary);
+
+			License license = info.getLicense();
+			License licenseProperties = infoProperties.getLicense();
+			if (license != null) {
+				resolveString(license::name, licenseProperties::getName);
+				resolveString(license::url, licenseProperties::getUrl);
+			}
+			else
+				info.license(licenseProperties);
+
+			Contact contact = info.getContact();
+			Contact contactProperties = infoProperties.getContact();
+			if (contact != null) {
+				resolveString(contact::name, contactProperties::getName);
+				resolveString(contact::email, contactProperties::getEmail);
+				resolveString(contact::url, contactProperties::getUrl);
+			}
+			else
+				info.contact(contactProperties);
+		}
+		else
+			openApi.info(infoProperties);
+	}
+
 
 	/**
 	 * Resolve string.
 	 *
 	 * @param setter the setter
-	 * @param node   the node
+	 * @param getter the value
 	 */
-	private void resolveString(
-			Consumer<String> setter, String node
-	) {
-		String nodeWithPrefix = propertyPrefix + node;
-		String value = propertyResolver.getProperty(nodeWithPrefix);
+	private void resolveString(Consumer<String> setter, Supplier<Object> getter) {
+		String value = (String) getter.get();
 		if (StringUtils.isNotBlank(value)) {
+			setter.accept(value);
+		}
+	}
+
+	/**
+	 * Resolve type.
+	 *
+	 * @param setter the setter
+	 * @param getter the getter
+	 */
+	private void resolveType(Consumer<Type> setter, Supplier<Object> getter) {
+		Type value = (Type) getter.get();
+		if (value != null) {
+			setter.accept(value);
+		}
+	}
+
+	/**
+	 * Resolve in.
+	 *
+	 * @param setter the setter
+	 * @param getter the getter
+	 */
+	private void resolveIn(Consumer<In> setter, Supplier<Object> getter) {
+		In value = (In) getter.get();
+		if (value != null) {
+			setter.accept(value);
+		}
+	}
+
+	/**
+	 * Resolve o auth flows.
+	 *
+	 * @param setter the setter
+	 * @param getter the getter
+	 */
+	private void resolveOAuthFlows(Consumer<OAuthFlows> setter, Supplier<Object> getter) {
+		OAuthFlows value = (OAuthFlows) getter.get();
+		if (value != null) {
+			setter.accept(value);
+		}
+	}
+
+
+	/**
+	 * Resolve set.
+	 *
+	 * @param setter the setter
+	 * @param getter the getter
+	 */
+	private void resolveSet(Consumer<List> setter, Supplier<List> getter) {
+		List value = getter.get();
+		if (!CollectionUtils.isEmpty(value)) {
 			setter.accept(value);
 		}
 	}

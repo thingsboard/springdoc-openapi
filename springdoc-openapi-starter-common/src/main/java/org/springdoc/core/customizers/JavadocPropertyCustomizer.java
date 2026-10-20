@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2023 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -44,6 +46,7 @@ import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.converter.ModelConverterContext;
 import io.swagger.v3.core.converter.ModelConverterContextImpl;
 import io.swagger.v3.core.util.AnnotationsUtils;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.Schema;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -64,6 +67,9 @@ public record JavadocPropertyCustomizer(JavadocProvider javadocProvider,
 										ObjectMapperProvider objectMapperProvider)
 		implements ModelConverter {
 
+	/**
+	 * The constant LOGGER.
+	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(DelegatingMethodParameter.class);
 
 	/**
@@ -95,7 +101,7 @@ public record JavadocPropertyCustomizer(JavadocProvider javadocProvider,
 						setJavadocDescription(cls, fields, clsProperties, existingSchema, false);
 					}
 					else if (resolvedSchema != null && resolvedSchema.get$ref() != null && resolvedSchema.get$ref().contains(AnnotationsUtils.COMPONENTS_REF)) {
-						String schemaName = resolvedSchema.get$ref().substring(21);
+						String schemaName = resolvedSchema.get$ref().substring(Components.COMPONENTS_SCHEMAS_REF.length());
 						Schema existingSchema = context.getDefinedModels().get(schemaName);
 						setJavadocDescription(cls, fields, clsProperties, existingSchema, false);
 					}
@@ -103,7 +109,7 @@ public record JavadocPropertyCustomizer(JavadocProvider javadocProvider,
 						try {
 							Field processedTypesField = FieldUtils.getDeclaredField(ModelConverterContextImpl.class, "processedTypes", true);
 							Set<AnnotatedType> processedType = (Set<AnnotatedType>) processedTypesField.get(context);
-							if(processedType.contains(type))
+							if (processedType.contains(type))
 								setJavadocDescription(cls, fields, clsProperties, resolvedSchema, true);
 						}
 						catch (IllegalAccessException e) {
@@ -157,7 +163,7 @@ public record JavadocPropertyCustomizer(JavadocProvider javadocProvider,
 							if (StringUtils.isBlank(stringSchemaEntry.getValue().getDescription())) {
 								Optional<PropertyDescriptor> optionalPd = clsProperties.stream().filter(pd -> pd.getName().equals(stringSchemaEntry.getKey())).findAny();
 								optionalPd.ifPresent(pd1 -> {
-									if(pd1.getReadMethod() != null) {
+									if (pd1.getReadMethod() != null) {
 										String fieldJavadoc = javadocProvider.getMethodJavadocDescription(pd1.getReadMethod());
 										if (StringUtils.isNotBlank(fieldJavadoc))
 											stringSchemaEntry.getValue().setDescription(fieldJavadoc);

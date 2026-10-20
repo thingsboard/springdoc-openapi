@@ -1,0 +1,13 @@
+package test.org.springdoc.api.v31.app251.config;
+
+public class ApiVersionParser implements org.springframework.web.accept.ApiVersionParser {
+
+    @Override
+    public Comparable parseVersion(String version) {
+        // Remove "v" prefix if it exists (v1 becomes 1, v2 becomes 2)
+        if (version.startsWith("v") || version.startsWith("V")) {
+            version = version.substring(1);
+        }
+        return version;
+    }
+}

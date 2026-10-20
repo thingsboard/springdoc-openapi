@@ -1,0 +1,53 @@
+/*
+ *
+ *  * Copyright 2019-2026 the original author or authors.
+ *  *
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *  * You may obtain a copy of the License at
+ *  *
+ *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
+ *
+ */
+
+package test.org.springdoc.api.v31.app3
+
+import org.springframework.boot.runApplication
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+import test.org.springdoc.api.v31.app22.DemoApp
+
+enum class SystemStatus(val status: String) {
+	OK("OK")
+}
+
+data class SystemStatusResponse(
+	val status: SystemStatus
+)
+
+data class Foo(
+	val bar: LinkedHashSet<String>,
+)
+
+@RestController
+@RequestMapping("/status")
+class SystemStatusController {
+
+	@GetMapping("/bar")
+	fun getTestData(): Foo = Foo(bar = linkedSetOf("test"))
+
+	@GetMapping
+	fun index() = SystemStatusResponse(SystemStatus.OK)
+
+	@GetMapping("/foo")
+	@Deprecated("")
+	fun foo() = SystemStatusResponse(SystemStatus.OK)
+
+}

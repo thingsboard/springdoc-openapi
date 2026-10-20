@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -31,21 +33,24 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.StringUtils;
+import org.springdoc.core.utils.Constants;
 
 import static org.springdoc.core.utils.Constants.GROUP_NAME_NOT_NULL_OR_EMPTY;
+import static org.springdoc.core.utils.Constants.SWAGGER_UI_OAUTH_REDIRECT_URL;
 
 /**
  * Please refer to the swagger
  * <a href="https://github.com/swagger-api/swagger-ui/blob/master/docs/usage/configuration.md">configuration.md</a>
  * to get the idea what each parameter does.
+ *
  * @author bnasslahsen
  */
 public abstract class AbstractSwaggerUiConfigProperties {
 
 	/**
-	 * The path for the Swagger UI pages to load. Will redirect to the springdoc.webjars.prefix property.
+	 * The path for the Swagger UI pages to load.
 	 */
-	protected String path;
+	protected String path = Constants.DEFAULT_SWAGGER_UI_PATH;
 
 	/**
 	 * The name of a component available via the plugin system to use as the top-level layout for Swagger UI.
@@ -81,7 +86,7 @@ public abstract class AbstractSwaggerUiConfigProperties {
 	/**
 	 * Enables or disables deep linking for tags and operations.
 	 *
-	 * @see  <a href="https://github.com/swagger-api/swagger-ui/blob/master/docs/usage/deep-linking.md">deep-linking.md</a>
+	 * @see <a href="https://github.com/swagger-api/swagger-ui/blob/master/docs/usage/deep-linking.md">deep-linking.md</a>
 	 */
 	protected Boolean deepLinking;
 
@@ -138,7 +143,7 @@ public abstract class AbstractSwaggerUiConfigProperties {
 	/**
 	 * OAuth redirect URL.
 	 */
-	protected String oauth2RedirectUrl;
+	protected String oauth2RedirectUrl = SWAGGER_UI_OAUTH_REDIRECT_URL;
 
 	/**
 	 * The Url.
@@ -181,6 +186,29 @@ public abstract class AbstractSwaggerUiConfigProperties {
 	protected Boolean withCredentials;
 
 	/**
+	 * The Document title.
+	 */
+	protected String documentTitle;
+
+	/**
+	 * Gets document title.
+	 *
+	 * @return the document title
+	 */
+	public String getDocumentTitle() {
+		return documentTitle;
+	}
+
+	/**
+	 * Sets document title.
+	 *
+	 * @param documentTitle the document title
+	 */
+	public void setDocumentTitle(String documentTitle) {
+		this.documentTitle = documentTitle;
+	}
+	
+	/**
 	 * Gets with credentials.
 	 *
 	 * @return the with credentials
@@ -218,6 +246,7 @@ public abstract class AbstractSwaggerUiConfigProperties {
 
 	/**
 	 * Gets try it out enabled
+	 *
 	 * @return try it out enabled
 	 */
 	public Boolean getTryItOutEnabled() {
@@ -226,6 +255,7 @@ public abstract class AbstractSwaggerUiConfigProperties {
 
 	/**
 	 * Sets try it out enabled
+	 *
 	 * @param tryItOutEnabled try it out enabled
 	 */
 	public void setTryItOutEnabled(Boolean tryItOutEnabled) {
@@ -668,13 +698,13 @@ public abstract class AbstractSwaggerUiConfigProperties {
 	/**
 	 * The enum Direction.
 	 */
-	enum Direction {
+	public enum Direction {
 		/**
-		 *Asc direction.
+		 * Asc direction.
 		 */
 		ASC,
 		/**
-		 *Desc direction.
+		 * Desc direction.
 		 */
 		DESC;
 
@@ -719,8 +749,8 @@ public abstract class AbstractSwaggerUiConfigProperties {
 		/**
 		 * Instantiates a new Swagger url.
 		 *
-		 * @param group the group
-		 * @param url the url
+		 * @param group       the group
+		 * @param url         the url
 		 * @param displayName the display name
 		 */
 		public SwaggerUrl(String group, String url, String displayName) {

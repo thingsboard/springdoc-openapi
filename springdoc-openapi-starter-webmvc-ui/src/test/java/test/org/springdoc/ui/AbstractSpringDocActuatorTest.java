@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -25,26 +25,30 @@
 package test.org.springdoc.ui;
 
 
+import java.net.http.HttpClient;
+
 import jakarta.annotation.PostConstruct;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalManagementPort;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 
 public abstract class AbstractSpringDocActuatorTest extends AbstractCommonTest {
 
-	protected RestTemplate actuatorRestTemplate;
+	protected RestClient actuatorClient;
 
 	@LocalManagementPort
 	private int managementPort;
 
-	@Autowired
-	private RestTemplateBuilder restTemplateBuilder;
-
 	@PostConstruct
 	void init() {
-		actuatorRestTemplate = restTemplateBuilder
-				.rootUri("http://localhost:" + this.managementPort).build();
+		HttpClient jdkClient = HttpClient.newBuilder()
+				.followRedirects(HttpClient.Redirect.NORMAL) 
+				.build();
+		this.actuatorClient = RestClient.builder()
+				.requestFactory(new JdkClientHttpRequestFactory(jdkClient))
+				.baseUrl("http://localhost:" + managementPort)
+				.build();
 	}
+	
 }

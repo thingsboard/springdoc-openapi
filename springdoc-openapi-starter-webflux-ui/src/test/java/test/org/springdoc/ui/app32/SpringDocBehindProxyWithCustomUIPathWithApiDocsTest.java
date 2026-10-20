@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -38,19 +38,19 @@ public class SpringDocBehindProxyWithCustomUIPathWithApiDocsTest extends Abstrac
 	private static final String X_FORWARD_PREFIX = "/path/prefix";
 
 	@Test
-	public void shouldRedirectSwaggerUIFromCustomPath() {
+	void shouldRedirectSwaggerUIFromCustomPath() {
 		webTestClient
 				.get().uri("/foo/documentation/swagger.html")
 				.header("X-Forwarded-Prefix", X_FORWARD_PREFIX)
 				.exchange()
 				.expectStatus().isFound()
-				.expectHeader().location("/path/prefix/foo/documentation/webjars/swagger-ui/index.html");
+				.expectHeader().location("/path/prefix/foo/documentation/swagger-ui/index.html");
 	}
 
 	@Test
-	public void shouldReturnCorrectInitializerJS() {
+	void shouldReturnCorrectInitializerJS() {
 		webTestClient
-				.get().uri("/foo/documentation/webjars/swagger-ui/swagger-initializer.js")
+				.get().uri("/foo/documentation/swagger-ui/swagger-initializer.js")
 				.header("X-Forwarded-Prefix", X_FORWARD_PREFIX)
 				.exchange()
 				.expectStatus().isOk()
@@ -62,7 +62,7 @@ public class SpringDocBehindProxyWithCustomUIPathWithApiDocsTest extends Abstrac
 	}
 
 	@Test
-	public void shouldCalculateUrlsBehindProxy() {
+	void shouldCalculateUrlsBehindProxy() {
 		webTestClient
 				.get().uri("/bar/openapi/v3/swagger-config")
 				.header("X-Forwarded-Prefix", X_FORWARD_PREFIX)

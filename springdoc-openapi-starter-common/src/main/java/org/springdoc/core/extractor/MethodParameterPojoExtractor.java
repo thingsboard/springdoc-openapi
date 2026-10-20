@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -33,9 +35,18 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.MonthDay;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,25 +56,35 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.swagger.v3.core.util.PrimitiveType;
 import io.swagger.v3.oas.annotations.Parameter;
-import org.springdoc.core.parsers.ReturnTypeParser;
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.springdoc.core.utils.SchemaUtils;
 
+import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.MethodParameter;
 
 import static org.springdoc.core.utils.Constants.DOT;
 
 /**
  * The type Method parameter pojo extractor.
- * @author bnasslahsen
+ *
+ * @author bnasslahsen, michael.clarke
  */
 public class MethodParameterPojoExtractor {
 
+	/**
+	 * The Schema utils.
+	 */
+	private final SchemaUtils schemaUtils;
+	
 	/**
 	 * The constant SIMPLE_TYPE_PREDICATES.
 	 */
@@ -88,6 +109,16 @@ public class MethodParameterPojoExtractor {
 		SIMPLE_TYPES.add(Iterable.class);
 		SIMPLE_TYPES.add(Duration.class);
 		SIMPLE_TYPES.add(LocalTime.class);
+		SIMPLE_TYPES.add(LocalDateTime.class);
+		SIMPLE_TYPES.add(LocalDate.class);
+		SIMPLE_TYPES.add(YearMonth.class);
+		SIMPLE_TYPES.add(MonthDay.class);
+		SIMPLE_TYPES.add(Year.class);
+		SIMPLE_TYPES.add(Class.class);
+		SIMPLE_TYPES.add(Period.class);
+		SIMPLE_TYPES.add(OffsetTime.class);
+		SIMPLE_TYPES.add(ZoneOffset.class);
+		SIMPLE_TYPES.add(TimeZone.class);
 
 		SIMPLE_TYPE_PREDICATES.add(Class::isPrimitive);
 		SIMPLE_TYPE_PREDICATES.add(Class::isEnum);
@@ -98,8 +129,11 @@ public class MethodParameterPojoExtractor {
 
 	/**
 	 * Instantiates a new Method parameter pojo extractor.
+	 *
+	 * @param schemaUtils the schema utils
 	 */
-	private MethodParameterPojoExtractor() {
+	public MethodParameterPojoExtractor(SchemaUtils schemaUtils) {
+		this.schemaUtils = schemaUtils;
 	}
 
 	/**
@@ -108,56 +142,99 @@ public class MethodParameterPojoExtractor {
 	 * @param clazz the clazz
 	 * @return the stream
 	 */
-	static Stream<MethodParameter> extractFrom(Class<?> clazz) {
-		return extractFrom(clazz, "");
+	Stream<MethodParameter> extractFrom(Class<?> clazz) {
+		return extractFrom(clazz, "", true);
 	}
 
 	/**
 	 * Extract from stream.
 	 *
-	 * @param clazz the clazz
+	 * @param clazz           the clazz
 	 * @param fieldNamePrefix the field name prefix
+	 * @param parentRequired  whether the field that hold the class currently being inspected was required or optional
 	 * @return the stream
 	 */
-	private static Stream<MethodParameter> extractFrom(Class<?> clazz, String fieldNamePrefix) {
+	private Stream<MethodParameter> extractFrom(Class<?> clazz, String fieldNamePrefix, boolean parentRequired) {
+		Map<String, PropertyDescriptor> propertyDescriptorMap;
+		try {
+			propertyDescriptorMap = Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
+					.collect(Collectors.toMap(PropertyDescriptor::getName, pd -> pd, (a, b) -> a));
+		}
+		catch (IntrospectionException e) {
+			propertyDescriptorMap = Collections.emptyMap();
+		}
+		Map<String, PropertyDescriptor> finalPropertyDescriptorMap = propertyDescriptorMap;
 		return allFieldsOf(clazz).stream()
 				.filter(field -> !field.getType().equals(clazz))
-				.flatMap(f -> fromGetterOfField(clazz, f, fieldNamePrefix))
+				.flatMap(f -> fromGetterOfField(clazz, f, fieldNamePrefix, parentRequired, finalPropertyDescriptorMap))
 				.filter(Objects::nonNull);
 	}
 
 	/**
 	 * From getter of field stream.
 	 *
-	 * @param paramClass the param class
-	 * @param field the field
+	 * @param paramClass      the param class
+	 * @param field           the field
 	 * @param fieldNamePrefix the field name prefix
+	 * @param parentRequired  whether the field that holds the class currently being examined was required or optional
 	 * @return the stream
 	 */
-	private static Stream<MethodParameter> fromGetterOfField(Class<?> paramClass, Field field, String fieldNamePrefix) {
+	private Stream<MethodParameter> fromGetterOfField(Class<?> paramClass, Field field, String fieldNamePrefix, boolean parentRequired, Map<String, PropertyDescriptor> propertyDescriptorMap) {
 		Class<?> type = extractType(paramClass, field);
 
 		if (Objects.isNull(type))
 			return Stream.empty();
 
 		if (isSimpleType(type))
-			return fromSimpleClass(paramClass, field, fieldNamePrefix);
+			return fromSimpleClass(paramClass, field, fieldNamePrefix, parentRequired, propertyDescriptorMap);
 		else {
-			String prefix = fieldNamePrefix + field.getName() + DOT;
-			return extractFrom(type, prefix);
+			Parameter parameter = field.getAnnotation(Parameter.class);
+			Schema schema = field.getAnnotation(Schema.class);
+			boolean visible = SchemaUtils.swaggerVisible(schema, parameter);
+			if (!visible) {
+				return Stream.empty();
+			}
+			String prefix = fieldNamePrefix + resolveName(parameter, schema).orElse(field.getName()) + DOT;
+			boolean fieldRequired = this.schemaUtils.fieldRequired(field, schema, parameter);
+			return extractFrom(type, prefix, parentRequired && fieldRequired);
 		}
+	}
+
+	private static Optional<String> resolveName(Parameter parameter, Schema schema) {
+		if (parameter != null) {
+			return resolveNameFromParameter(parameter);
+		}
+		if (schema != null) {
+			return resolveNameFromSchema(schema);
+		}
+		return Optional.empty();
+	}
+
+	private static Optional<String> resolveNameFromParameter(Parameter parameter) {
+		if (parameter.name().isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(parameter.name());
+	}
+
+	private static Optional<String> resolveNameFromSchema(Schema schema) {
+		if (schema.name().isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(schema.name());
 	}
 
 	/**
 	 * Extract the type
-	 * @param paramClass
-	 * @param field
+	 *
+	 * @param paramClass the param class
+	 * @param field      the field
 	 * @return The revoled type or null if it was not a reifiable type
 	 */
 	private static Class<?> extractType(Class<?> paramClass, Field field) {
 		Class<?> type = field.getType();
 		if (field.getGenericType() instanceof TypeVariable<?>) {
-			Type fieldType = ReturnTypeParser.resolveType(field.getGenericType(), paramClass);
+			Type fieldType = GenericTypeResolver.resolveType(field.getGenericType(), paramClass);
 
 			if (fieldType instanceof Class<?>)
 				type = (Class<?>) fieldType;
@@ -171,41 +248,38 @@ public class MethodParameterPojoExtractor {
 	/**
 	 * From simple class stream.
 	 *
-	 * @param paramClass the param class
-	 * @param field the field
+	 * @param paramClass      the param class
+	 * @param field           the field
 	 * @param fieldNamePrefix the field name prefix
 	 * @return the stream
 	 */
-	private static Stream<MethodParameter> fromSimpleClass(Class<?> paramClass, Field field, String fieldNamePrefix) {
+	private Stream<MethodParameter> fromSimpleClass(Class<?> paramClass, Field field, String fieldNamePrefix, boolean parentRequired, Map<String, PropertyDescriptor> propertyDescriptorMap) {
 		Annotation[] fieldAnnotations = field.getDeclaredAnnotations();
-		try {
-			Parameter parameter = field.getAnnotation(Parameter.class);
-			boolean isNotRequired = parameter == null || !parameter.required();
-			if (paramClass.getSuperclass() != null && paramClass.isRecord()) {
-				return Stream.of(paramClass.getRecordComponents())
-						.filter(d -> d.getName().equals(field.getName()))
-						.map(RecordComponent::getAccessor)
-						.map(method -> new MethodParameter(method, -1))
-						.map(methodParameter -> DelegatingMethodParameter.changeContainingClass(methodParameter, paramClass))
-						.map(param -> new DelegatingMethodParameter(param, fieldNamePrefix + field.getName(), fieldAnnotations, true, isNotRequired));
+		Parameter parameter = field.getAnnotation(Parameter.class);
+		Schema schema = field.getAnnotation(Schema.class);
+		boolean fieldRequired = this.schemaUtils.fieldRequired(field, schema, parameter);
 
-			}
-			else
-				return Stream.of(Introspector.getBeanInfo(paramClass).getPropertyDescriptors())
-						.filter(d -> d.getName().equals(field.getName()))
-						.map(PropertyDescriptor::getReadMethod)
-						.filter(Objects::nonNull)
-						.map(method -> new MethodParameter(method, -1))
-						.map(methodParameter -> DelegatingMethodParameter.changeContainingClass(methodParameter, paramClass))
-						.map(param -> new DelegatingMethodParameter(param, fieldNamePrefix + field.getName(), fieldAnnotations, true, isNotRequired));
+		boolean paramRequired = parentRequired && fieldRequired;
+		if (paramClass.getSuperclass() != null && paramClass.isRecord()) {
+			return Stream.of(paramClass.getRecordComponents())
+					.filter(d -> d.getName().equals(field.getName()))
+					.map(RecordComponent::getAccessor)
+					.map(method -> new MethodParameter(method, -1))
+					.map(methodParameter -> DelegatingMethodParameter.changeContainingClass(methodParameter, paramClass))
+					.map(param -> new DelegatingMethodParameter(param, fieldNamePrefix + field.getName(), fieldAnnotations, param.getMethodAnnotations(), true, field, !paramRequired));
 		}
-		catch (IntrospectionException e) {
-			return Stream.of();
+		else {
+			PropertyDescriptor pd = propertyDescriptorMap.get(field.getName());
+			if (pd == null || pd.getReadMethod() == null)
+				return Stream.of();
+			MethodParameter methodParameter = new MethodParameter(pd.getReadMethod(), -1);
+			methodParameter = DelegatingMethodParameter.changeContainingClass(methodParameter, paramClass);
+			return Stream.of(new DelegatingMethodParameter(methodParameter, fieldNamePrefix + field.getName(), fieldAnnotations, methodParameter.getMethodAnnotations(), true, field, !paramRequired));
 		}
 	}
 
 	/**
-	 * All fields of list.
+	 * All fields of list. include parent fields
 	 *
 	 * @param clazz the clazz
 	 * @return the list
@@ -256,7 +330,7 @@ public class MethodParameterPojoExtractor {
 	 * @param classes the classes
 	 */
 	public static void addSimpleTypes(Class<?>... classes) {
-		SIMPLE_TYPES.addAll(Arrays.asList(classes));
+		SIMPLE_TYPES.addAll(List.of(classes));
 	}
 
 	/**
@@ -265,7 +339,7 @@ public class MethodParameterPojoExtractor {
 	 * @param classes the classes
 	 */
 	public static void removeSimpleTypes(Class<?>... classes) {
-		SIMPLE_TYPES.removeAll(Arrays.asList(classes));
+		SIMPLE_TYPES.removeAll(List.of(classes));
 	}
 
 }

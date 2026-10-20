@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -34,14 +34,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class SpringDocApp10Test extends AbstractSpringDocTest {
 
 	@Test
-	public void shouldDisplaySwaggerUiPage() throws Exception {
+	void shouldDisplaySwaggerUiPage() throws Exception {
 		MvcResult mvcResult = mockMvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk()).andReturn();
 		String contentAsString = mvcResult.getResponse().getContentAsString();
 		assertTrue(contentAsString.contains("Swagger UI"));
 	}
 
 	@Test
-	public void originalIndex() throws Exception {
+	void originalIndex() throws Exception {
 		super.chekJS();
 	}
 

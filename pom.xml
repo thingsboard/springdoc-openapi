@@ -1,25 +1,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.springdoc</groupId>
+	<groupId>org.thingsboard</groupId>
 	<artifactId>springdoc-openapi</artifactId>
-	<version>2.4.1-SNAPSHOT</version>
+	<version>3.1.1TB</version>
 	<packaging>pom</packaging>
 	<name>Spring openapi documentation</name>
 	<description>Spring openapi documentation</description>
-	<url>https://springdoc.org/</url>
+	<url>https://github.com/thingsboard/springdoc-openapi</url>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.2.3</version>
+		<version>4.1.0</version>
 	</parent>
 
 	<licenses>
 		<license>
-			<name>The Apache License, Version 2.0</name>
+			<name>Apache License 2.0</name>
 			<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
 		</license>
 	</licenses>
+
+	<organization>
+		<name>ThingsBoard</name>
+		<url>https://thingsboard.io/</url>
+	</organization>
 
 	<developers>
 		<developer>
@@ -28,25 +33,21 @@
 			<organization>springdoc</organization>
 			<organizationUrl>https://springdoc.org/</organizationUrl>
 		</developer>
+		<developer>
+			<id>ikulikov</id>
+			<name>Igor Kulikov</name>
+			<email>ikulikov@thingsboard.io</email>
+			<organization>ThingsBoard</organization>
+			<organizationUrl>https://thingsboard.io/</organizationUrl>
+		</developer>
 	</developers>
 
 	<scm>
-		<url>git@github.com:springdoc/springdoc-openapi.git</url>
-		<connection>scm:git:git@github.com:springdoc/springdoc-openapi.git</connection>
-		<developerConnection>scm:git:git@github.com:springdoc/springdoc-openapi.git
-		</developerConnection>
-		<tag>HEAD</tag>
+		<url>https://github.com/thingsboard/springdoc-openapi</url>
+		<connection>scm:git:https://github.com/thingsboard/springdoc-openapi.git</connection>
+		<developerConnection>scm:git:git@github.com:thingsboard/springdoc-openapi.git</developerConnection>
+		<tag>v3.1.1TB</tag>
 	</scm>
-	<distributionManagement>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-		<repository>
-			<id>ossrh</id>
-			<url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-		</repository>
-	</distributionManagement>
 
 	<modules>
 		<module>springdoc-openapi-starter-common</module>
@@ -54,21 +55,39 @@
 		<module>springdoc-openapi-starter-webflux-api</module>
 		<module>springdoc-openapi-starter-webmvc-ui</module>
 		<module>springdoc-openapi-starter-webflux-ui</module>
+		<module>springdoc-openapi-starter-webmvc-scalar</module>
+		<module>springdoc-openapi-starter-webflux-scalar</module>
+		<module>springdoc-openapi-starter-common-mcp</module>
+		<module>springdoc-openapi-starter-webmvc-mcp</module>
+		<module>springdoc-openapi-starter-webflux-mcp</module>
+		<module>springdoc-openapi-bom</module>
+		<module>springdoc-swagger-ui</module>
+		<module>springdoc-openapi-tests</module>
 	</modules>
 
 	<properties>
-		<maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
-		<maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-		<nexus-staging-maven-plugin>1.6.8</nexus-staging-maven-plugin>
-		<swagger-api.version>2.2.20</swagger-api.version>
-		<swagger-ui.version>5.11.8</swagger-ui.version>
+		<build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
+		<maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
+		<maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+		<central-publishing-maven-plugin.version>0.11.0
+		</central-publishing-maven-plugin.version>
+		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
+		<swagger-api.version>2.2.55</swagger-api.version>
+		<swagger-ui.version>5.21.0TB2</swagger-ui.version>
 		<gmavenplus-plugin.version>1.13.1</gmavenplus-plugin.version>
-		<jaxb-impl.version>2.1</jaxb-impl.version>
-		<javax.jws-api.version>1.1</javax.jws-api.version>
 		<jjwt.version>0.9.1</jjwt.version>
+		<jackson-databind-nullable.version>0.2.8</jackson-databind-nullable.version>
 		<therapi-runtime-javadoc.version>0.15.0</therapi-runtime-javadoc.version>
-		<spring-cloud-function.version>4.0.0</spring-cloud-function.version>
-		<spring-security-oauth2-authorization-server.version>1.0.1</spring-security-oauth2-authorization-server.version>
+		<spring-cloud-function.version>5.0.0-M1</spring-cloud-function.version>
+		<spring-security-oauth2-authorization-server.version>2.0.0-M2
+		</spring-security-oauth2-authorization-server.version>
+		<scalar.version>0.5.55</scalar.version>
+		<spring-ai.version>2.0.0</spring-ai.version>
+		<mcp-sdk.version>2.0.0</mcp-sdk.version>
+		<skipPublishing>false</skipPublishing>
+		<skip.npm>true</skip.npm>
+		<frontend-maven-plugin.version>1.15.1</frontend-maven-plugin.version>
+		<node.version>v22.14.0</node.version>
 	</properties>
 
 	<dependencyManagement>
@@ -79,74 +98,78 @@
 				<artifactId>swagger-core-jakarta</artifactId>
 				<version>${swagger-api.version}</version>
 			</dependency>
-			<!-- swagger ui -->
-			<dependency>
-				<groupId>org.webjars</groupId>
-				<artifactId>swagger-ui</artifactId>
-				<version>${swagger-ui.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>javax.xml</groupId>
-				<artifactId>jaxb-impl</artifactId>
-				<version>${jaxb-impl.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>javax.jws</groupId>
-				<artifactId>javax.jws-api</artifactId>
-				<version>${javax.jws-api.version}</version>
-				<scope>test</scope>
-			</dependency>
 			<dependency>
 				<groupId>io.jsonwebtoken</groupId>
 				<artifactId>jjwt</artifactId>
 				<version>${jjwt.version}</version>
-				<scope>test</scope>
-			</dependency>
-			<!-- spring Cloud -->
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-function-web</artifactId>
-				<version>${spring-cloud-function.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-starter-function-web</artifactId>
-				<version>${spring-cloud-function.version}</version>
+				<groupId>org.openapitools</groupId>
+				<artifactId>jackson-databind-nullable</artifactId>
+				<version>${jackson-databind-nullable.version}</version>
 			</dependency>
+			<!-- spring Cloud Function-->
 			<dependency>
 				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-starter-function-webflux</artifactId>
+				<artifactId>spring-cloud-function-dependencies</artifactId>
 				<version>${spring-cloud-function.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
 			</dependency>
+			<!-- spring Security Oauth2 Authorization Server-->
 			<dependency>
 				<groupId>org.springframework.security</groupId>
 				<artifactId>spring-security-oauth2-authorization-server</artifactId>
 				<version>${spring-security-oauth2-authorization-server.version}</version>
 			</dependency>
-			<!-- SpringDoc -->
 			<dependency>
-				<groupId>org.springdoc</groupId>
-				<artifactId>springdoc-openapi-starter-common</artifactId>
-				<version>${project.version}</version>
+				<groupId>com.scalar.maven</groupId>
+				<artifactId>scalar</artifactId>
+				<version>${scalar.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.springdoc</groupId>
-				<artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
-				<version>${project.version}</version>
+				<groupId>com.github.therapi</groupId>
+				<artifactId>therapi-runtime-javadoc</artifactId>
+				<version>${therapi-runtime-javadoc.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.springdoc</groupId>
-				<artifactId>springdoc-openapi-starter-webflux-api</artifactId>
-				<version>${project.version}</version>
+				<groupId>com.github.therapi</groupId>
+				<artifactId>therapi-runtime-javadoc-scribe</artifactId>
+				<version>${therapi-runtime-javadoc.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.springdoc</groupId>
-				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-				<version>${project.version}</version>
+				<groupId>com.scalar.maven</groupId>
+				<artifactId>scalar-core</artifactId>
+				<version>${scalar.version}</version>
+			</dependency>
+			<!-- MCP SDK -->
+			<dependency>
+				<groupId>io.modelcontextprotocol.sdk</groupId>
+				<artifactId>mcp-core</artifactId>
+				<version>${mcp-sdk.version}</version>
+			</dependency>
+			<!-- Spring AI -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bom</artifactId>
+				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
 			</dependency>
 			<dependency>
-				<groupId>org.springdoc</groupId>
-				<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+				<groupId>com.scalar.maven</groupId>
+				<artifactId>scalar-webmvc</artifactId>
+				<version>${scalar.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.scalar.maven</groupId>
+				<artifactId>scalar-webflux</artifactId>
+				<version>${scalar.version}</version>
+			</dependency>
+			<!-- swagger ui -->
+			<dependency>
+				<groupId>org.thingsboard</groupId>
+				<artifactId>springdoc-swagger-ui</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 		</dependencies>
@@ -156,25 +179,45 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.junit.vintage</groupId>
-					<artifactId>junit-vintage-engine</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 	</dependencies>
 	<build>
 		<pluginManagement>
 			<plugins>
 				<plugin>
-					<groupId>org.codehaus.gmavenplus</groupId>
-					<artifactId>gmavenplus-plugin</artifactId>
-					<version>${gmavenplus-plugin.version}</version>
+					<groupId>com.github.eirslett</groupId>
+					<artifactId>frontend-maven-plugin</artifactId>
+					<version>${frontend-maven-plugin.version}</version>
 				</plugin>
 			</plugins>
 		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>${build-helper-maven-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>add-license-resource</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>add-resource</goal>
+						</goals>
+						<configuration>
+							<resources>
+								<resource>
+									<directory>${basedir}/..</directory>
+									<targetPath>META-INF</targetPath>
+									<includes>
+										<include>LICENSE</include>
+										<include>COPYRIGHT</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -186,7 +229,8 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${basedir}/target/classes/META-INF</outputDirectory>
+							<outputDirectory>${basedir}/target/classes/META-INF
+							</outputDirectory>
 							<resources>
 								<resource>
 									<directory>${basedir}/..</directory>
@@ -209,14 +253,9 @@
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
-			<modules>
-				<module>springdoc-openapi-starter-common</module>
-				<module>springdoc-openapi-starter-webmvc-api</module>
-				<module>springdoc-openapi-starter-webflux-api</module>
-				<module>springdoc-openapi-starter-webmvc-ui</module>
-				<module>springdoc-openapi-starter-webflux-ui</module>
-				<module>springdoc-openapi-tests</module>
-			</modules>
+			<properties>
+				<skip.npm>false</skip.npm>
+			</properties>
 		</profile>
 		<profile>
 			<id>gpg</id>
@@ -252,6 +291,31 @@
 					</plugin>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-resources-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>copy-licenses-into-javadoc</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>copy-resources</goal>
+								</goals>
+								<configuration>
+									<outputDirectory>${project.build.directory}/reports/apidocs/META-INF</outputDirectory>
+									<resources>
+										<resource>
+											<directory>${basedir}/..</directory>
+											<includes>
+												<include>LICENSE</include>
+												<include>COPYRIGHT</include>
+											</includes>
+										</resource>
+									</resources>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
 						<version>${maven-gpg-plugin.version}</version>
 						<executions>
@@ -265,31 +329,16 @@
 						</executions>
 					</plugin>
 					<plugin>
-						<groupId>org.sonatype.plugins</groupId>
-						<artifactId>nexus-staging-maven-plugin</artifactId>
-						<version>${nexus-staging-maven-plugin}</version>
-						<extensions>true</extensions>
-						<configuration>
-							<serverId>ossrh</serverId>
-							<nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-							<autoReleaseAfterClose>true</autoReleaseAfterClose>
-						</configuration>
-						<dependencies>
-							<dependency>
-								<groupId>com.thoughtworks.xstream</groupId>
-								<artifactId>xstream</artifactId>
-								<version>1.4.15</version>
-							</dependency>
-						</dependencies>
-					</plugin>
-					<plugin>
 						<artifactId>maven-release-plugin</artifactId>
 						<version>${maven-release-plugin.version}</version>
 						<configuration>
 							<tagNameFormat>v@{project.version}</tagNameFormat>
 							<autoVersionSubmodules>true</autoVersionSubmodules>
 							<useReleaseProfile>false</useReleaseProfile>
-							<releaseProfiles>gpg</releaseProfiles>
+							<!-- ci as well as gpg: release:perform activates these with -P,
+							     which would otherwise deactivate the activeByDefault ci
+							     profile and silently skip the npm frontend build. -->
+							<releaseProfiles>ci,gpg</releaseProfiles>
 							<goals>deploy</goals>
 						</configuration>
 					</plugin>
@@ -297,39 +346,31 @@
 			</build>
 		</profile>
 	</profiles>
+
 	<repositories>
 		<repository>
-			<id>central</id>
-			<url>https://repo.maven.apache.org/maven2</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>spring-release</id>
-			<name>Spring release</name>
-			<url>https://repo.spring.io/release</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>spring-snapshot</id>
+			<id>spring-snapshots</id>
 			<name>Spring Snapshots</name>
 			<url>https://repo.spring.io/snapshot</url>
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
-	</repositories>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>spring-releases</id>
-			<name>Spring Releases</name>
-			<url>https://repo.spring.io/release</url>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
-		</pluginRepository>
-	</pluginRepositories>
+		</repository>
+	</repositories>
+
+	<distributionManagement>
+		<repository>
+			<id>thingsboard-repo-deploy</id>
+			<name>ThingsBoard Public Repo</name>
+			<url>https://repo.thingsboard.io/artifactory/libs-release-public</url>
+		</repository>
+	</distributionManagement>
 </project>

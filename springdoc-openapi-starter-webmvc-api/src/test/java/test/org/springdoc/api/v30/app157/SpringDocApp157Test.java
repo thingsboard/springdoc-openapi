@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import test.org.springdoc.api.v30.AbstractSpringDocV30Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
@@ -60,7 +61,7 @@ public class SpringDocApp157Test extends AbstractSpringDocV30Test {
 	}
 
 	@Test
-	public void testApp() throws Exception {
+	protected void testApp() throws Exception {
 		mockMvc.perform(get(Constants.DEFAULT_API_DOCS_URL))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.openapi", is("3.0.1")))
@@ -71,5 +72,6 @@ public class SpringDocApp157Test extends AbstractSpringDocV30Test {
 	}
 
 	@SpringBootApplication
+	@ComponentScan(basePackages = "test.org.springdoc.api.v30.app157")
 	static class SpringBootApp {}
 }

@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 package test.org.springdoc.ui;
 
 import org.springdoc.core.configuration.SpringDocConfiguration;
-import org.springdoc.core.configuration.SpringDocUIConfiguration;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.core.properties.SwaggerUiConfigParameters;
 import org.springdoc.core.properties.SwaggerUiConfigProperties;
@@ -29,7 +28,7 @@ import org.springdoc.webflux.core.configuration.SpringDocWebFluxConfiguration;
 import org.springdoc.webflux.ui.SwaggerConfig;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -41,10 +40,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @WebFluxTest
 @ContextConfiguration(classes = { SpringDocConfiguration.class, SpringDocConfigProperties.class,
 		SpringDocWebFluxConfiguration.class, SwaggerUiConfigParameters.class, SwaggerUiConfigProperties.class,
-		SwaggerConfig.class, SwaggerUiOAuthProperties.class, SpringDocUIConfiguration.class })
+		SwaggerConfig.class, SwaggerUiOAuthProperties.class })
 public abstract class AbstractSpringDocTest extends AbstractCommonTest {
 
-	private static final String DEFAULT_SWAGGER_INITIALIZER_URL = Constants.DEFAULT_WEB_JARS_PREFIX_URL + Constants.SWAGGER_INITIALIZER_URL;
+	private static final String DEFAULT_SWAGGER_INITIALIZER_URL = Constants.SWAGGER_INITIALIZER_URL;
 
 	@Autowired
 	protected WebTestClient webTestClient;

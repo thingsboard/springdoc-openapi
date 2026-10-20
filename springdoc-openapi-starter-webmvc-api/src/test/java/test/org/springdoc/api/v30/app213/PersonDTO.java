@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -47,9 +47,9 @@ public class PersonDTO {
 	/**
 	 * Instantiates a new Person dto.
 	 *
-	 * @param email the email
+	 * @param email     the email
 	 * @param firstName the first name
-	 * @param lastName the last name
+	 * @param lastName  the last name
 	 */
 	public PersonDTO(final String email, final String firstName, final String lastName) {
 		this.email = email;

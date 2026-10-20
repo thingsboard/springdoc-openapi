@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import org.springframework.test.context.TestPropertySource;
 /**
  * In this test, it is checked that the error handler is displayed correctly in the documentation.
  * Exactly, that the local handler takes precedence over the global one
- * */
+ */
 @TestPropertySource(properties = "springdoc.api-docs.resolve-schema-properties=true")
 public class SpringDocApp166Test extends AbstractSpringDocV30Test {
 

@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -30,6 +32,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,18 +53,18 @@ import org.slf4j.LoggerFactory;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 
 import org.springframework.core.MethodParameter;
+import org.springframework.core.ResolvableType;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.querydsl.binding.QuerydslBinderCustomizer;
 import org.springframework.data.querydsl.binding.QuerydslBindings;
 import org.springframework.data.querydsl.binding.QuerydslBindingsFactory;
 import org.springframework.data.querydsl.binding.QuerydslPredicate;
-import org.springframework.data.util.CastUtils;
-import org.springframework.data.util.ClassTypeInformation;
-import org.springframework.data.util.TypeInformation;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.method.HandlerMethod;
 
 /**
  * The type Querydsl predicate operation customizer.
+ *
  * @author Gibah Joseph Email: gibahjoe@gmail.com Mar, 2020
  */
 @SuppressWarnings("unchecked")
@@ -90,8 +93,8 @@ public class QuerydslPredicateOperationCustomizer implements GlobalOperationCust
 	 */
 	public QuerydslPredicateOperationCustomizer(QuerydslBindingsFactory querydslBindingsFactory, SpringDocConfigProperties springDocConfigProperties) {
 		this.querydslBindingsFactory = querydslBindingsFactory;
-		this.springDocConfigProperties= springDocConfigProperties;
-		
+		this.springDocConfigProperties = springDocConfigProperties;
+
 	}
 
 	@Override
@@ -109,7 +112,7 @@ public class QuerydslPredicateOperationCustomizer implements GlobalOperationCust
 
 			QuerydslBindings bindings = extractQdslBindings(predicate);
 
-			Set<String> fieldsToAdd = Arrays.stream(predicate.root().getDeclaredFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.toSet());
+			Set<String> fieldsToAdd = Arrays.stream(predicate.root().getDeclaredFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).map(Field::getName).collect(Collectors.toCollection(LinkedHashSet::new));
 
 			Map<String, Object> pathSpecMap = getPathSpec(bindings, "pathSpecs");
 			//remove blacklisted fields
@@ -149,15 +152,13 @@ public class QuerydslPredicateOperationCustomizer implements GlobalOperationCust
 	/**
 	 * Gets field value of boolean.
 	 *
-	 * @param instance the instance  
-	 * @param fieldName the field name  
+	 * @param instance  the instance
+	 * @param fieldName the field name
 	 * @return the field value of boolean
 	 */
 	private boolean getFieldValueOfBoolean(QuerydslBindings instance, String fieldName) {
 		try {
-			Field field = FieldUtils.getDeclaredField(instance.getClass(), fieldName, true);
-			if (field != null)
-				return (boolean) field.get(instance);
+			return (boolean) FieldUtils.readDeclaredField(instance, fieldName, true);
 		}
 		catch (IllegalAccessException e) {
 			LOGGER.warn(e.getMessage());
@@ -168,28 +169,36 @@ public class QuerydslPredicateOperationCustomizer implements GlobalOperationCust
 	/**
 	 * Extract qdsl bindings querydsl bindings.
 	 *
-	 * @param predicate the predicate  
+	 * @param predicate the predicate
 	 * @return the querydsl bindings
 	 */
 	private QuerydslBindings extractQdslBindings(QuerydslPredicate predicate) {
-		ClassTypeInformation<?> classTypeInformation = ClassTypeInformation.from(predicate.root());
-		TypeInformation<?> domainType = classTypeInformation.getRequiredActualType();
-
-		Optional<Class<? extends QuerydslBinderCustomizer<?>>> bindingsAnnotation = Optional.of(predicate)
-				.map(QuerydslPredicate::bindings)
-				.map(CastUtils::cast);
+		// Replacement for ClassTypeInformation.from(...).getRequiredActualType()
+		TypeInformation<?> domainType = TypeInformation
+				.of(ResolvableType.forClass(predicate.root()))
+				.getRequiredActualType();
+		// Replacement for CastUtils::cast
+		Optional<Class<? extends QuerydslBinderCustomizer<?>>> bindingsAnnotation =
+				Optional.of(predicate)
+						.map(QuerydslPredicate::bindings)
+						.map(clazz -> {
+							@SuppressWarnings("unchecked")
+							Class<? extends QuerydslBinderCustomizer<?>> typed =
+									(Class<? extends QuerydslBinderCustomizer<?>>) clazz;
+							return typed;
+						});
 
 		return bindingsAnnotation
-				.map(it -> querydslBindingsFactory.createBindingsFor(domainType, it))
+				.map(customizer -> querydslBindingsFactory.createBindingsFor(domainType, customizer))
 				.orElseGet(() -> querydslBindingsFactory.createBindingsFor(domainType));
 	}
 
 	/**
 	 * Gets field values.
 	 *
-	 * @param instance the instance  
-	 * @param fieldName the field name  
-	 * @param alternativeFieldName the alternative field name  
+	 * @param instance             the instance
+	 * @param fieldName            the field name
+	 * @param alternativeFieldName the alternative field name
 	 * @return the field values
 	 */
 	private Set<String> getFieldValues(QuerydslBindings instance, String fieldName, String alternativeFieldName) {
@@ -209,14 +218,13 @@ public class QuerydslPredicateOperationCustomizer implements GlobalOperationCust
 	/**
 	 * Gets path spec.
 	 *
-	 * @param instance the instance  
-	 * @param fieldName the field name  
+	 * @param instance  the instance
+	 * @param fieldName the field name
 	 * @return the path spec
 	 */
 	private Map<String, Object> getPathSpec(QuerydslBindings instance, String fieldName) {
 		try {
-			Field field = FieldUtils.getDeclaredField(instance.getClass(), fieldName, true);
-			return (Map<String, Object>) field.get(instance);
+			return (Map<String, Object>) FieldUtils.readDeclaredField(instance, fieldName, true);
 		}
 		catch (IllegalAccessException e) {
 			LOGGER.warn(e.getMessage());
@@ -227,7 +235,7 @@ public class QuerydslPredicateOperationCustomizer implements GlobalOperationCust
 	/**
 	 * Gets path from path spec.
 	 *
-	 * @param instance the instance  
+	 * @param instance the instance
 	 * @return the path from path spec
 	 */
 	private Optional<Path<?>> getPathFromPathSpec(Object instance) {
@@ -235,8 +243,7 @@ public class QuerydslPredicateOperationCustomizer implements GlobalOperationCust
 			if (instance == null) {
 				return Optional.empty();
 			}
-			Field field = FieldUtils.getDeclaredField(instance.getClass(), "path", true);
-			return (Optional<Path<?>>) field.get(instance);
+			return (Optional<Path<?>>) FieldUtils.readDeclaredField(instance, "path", true);
 		}
 		catch (IllegalAccessException e) {
 			LOGGER.warn(e.getMessage());
@@ -246,9 +253,9 @@ public class QuerydslPredicateOperationCustomizer implements GlobalOperationCust
 
 	/***
 	 * Tries to figure out the Type of the field. It first checks the Qdsl pathSpecMap before checking the root class. Defaults to String.class
-	 * @param fieldName The name of the field used as reference to get the type  
-	 * @param pathSpecMap The Qdsl path specifications as defined in the resolved bindings  
-	 * @param root The root type where the paths are gotten
+	 * @param fieldName The name of the field used as reference to get the type   
+	 * @param pathSpecMap The Qdsl path specifications as defined in the resolved bindings   
+	 * @param root The root type where the paths are gotten 
 	 * @return The type of the field. Returns
 	 */
 	private Type getFieldType(String fieldName, Map<String, Object> pathSpecMap, Class<?> root) {
@@ -273,8 +280,8 @@ public class QuerydslPredicateOperationCustomizer implements GlobalOperationCust
 
 	/***
 	 * Constructs the parameter
-	 * @param type The type of the parameter  
-	 * @param name The name of the parameter  
+	 * @param type The type of the parameter   
+	 * @param name The name of the parameter   
 	 * @return The swagger parameter
 	 */
 	private Parameter buildParam(Type type, String name) {

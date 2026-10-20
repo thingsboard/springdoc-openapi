@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -39,6 +41,7 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * The type Abstract router function visitor.
+ *
  * @author bnasslahsen
  */
 public class AbstractRouterFunctionVisitor {
@@ -74,6 +77,12 @@ public class AbstractRouterFunctionVisitor {
 	protected Map<Integer, List<String>> nestedPaths = new LinkedHashMap<>();
 
 	/**
+	 * The Nested versions, keyed by nesting level, set by {@code version(...)} predicates
+	 * declared on {@code nest(...)} calls. Sticky for all routes within the nest level.
+	 */
+	protected Map<Integer, String> nestedVersions = new LinkedHashMap<>();
+
+	/**
 	 * The Is or.
 	 */
 	protected boolean isOr;
@@ -87,6 +96,11 @@ public class AbstractRouterFunctionVisitor {
 	 * The Attributes.
 	 */
 	protected Map<String, Object> attributes = new LinkedHashMap<>();
+
+	/**
+	 * The Version.
+	 */
+	private String version;
 
 	/**
 	 * The Level.
@@ -141,7 +155,7 @@ public class AbstractRouterFunctionVisitor {
 	/**
 	 * Header.
 	 *
-	 * @param name the name
+	 * @param name  the name
 	 * @param value the value
 	 */
 	public void header(String name, String value) {
@@ -165,7 +179,7 @@ public class AbstractRouterFunctionVisitor {
 	/**
 	 * Query param.
 	 *
-	 * @param name the name
+	 * @param name  the name
 	 * @param value the value
 	 */
 	public void queryParam(String name, String value) {
@@ -173,6 +187,24 @@ public class AbstractRouterFunctionVisitor {
 			queryParams.put(name, value);
 		else
 			currentRouterFunctionDatas.forEach(routerFunctionData -> routerFunctionData.addQueryParams(name, value));
+	}
+
+	/**
+	 * Version.
+	 *
+	 * @param version the version
+	 */
+	public void version(String version) {
+		// When visited as a nest(...) predicate, currentRouterFunctionDatas is null
+		// (cleared by commonStartNested) and the version must apply to every route in the
+		// nested block. When visited as a per-route predicate, currentRouterFunctionDatas
+		// has been freshly initialized by route(...) and the version is one-shot.
+		if (this.currentRouterFunctionDatas == null && this.level > 0) {
+			this.nestedVersions.put(this.level, version);
+		}
+		else {
+			this.version = version;
+		}
 	}
 
 	/**
@@ -187,7 +219,7 @@ public class AbstractRouterFunctionVisitor {
 	/**
 	 * Param.
 	 *
-	 * @param name the name
+	 * @param name  the name
 	 * @param value the value
 	 */
 	public void param(String name, String value) {
@@ -264,6 +296,7 @@ public class AbstractRouterFunctionVisitor {
 	 */
 	protected void commonEndNested() {
 		nestedPaths.remove(this.level);
+		nestedVersions.remove(this.level);
 		this.level--;
 	}
 
@@ -279,17 +312,33 @@ public class AbstractRouterFunctionVisitor {
 	 * Common route.
 	 */
 	protected void commonRoute() {
+		String currentVersion = (this.version != null) ? this.version : currentNestedVersion();
+		this.version = null;
 		this.routerFunctionDatas.addAll(currentRouterFunctionDatas);
-		currentRouterFunctionDatas.forEach(routerFunctionData -> routerFunctionData.addAttributes(this.attributes));
+		currentRouterFunctionDatas.forEach(routerFunctionData -> {
+			routerFunctionData.addAttributes(this.attributes);
+			if (currentVersion != null) {
+				routerFunctionData.setVersion(currentVersion);
+			}
+		});
 		this.attributes = new HashMap<>();
+	}
+
+	private String currentNestedVersion() {
+		if (nestedVersions.isEmpty()) {
+			return null;
+		}
+		// Innermost nest wins
+		int innermost = nestedVersions.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1);
+		return nestedVersions.get(innermost);
 	}
 
 	/**
 	 * Calculate header.
 	 *
-	 * @param value the value
+	 * @param value   the value
 	 * @param headers the headers
-	 * @param header the header
+	 * @param header  the header
 	 */
 	private void calculateHeader(String value, List<String> headers, String header) {
 		if (value.contains(",")) {
@@ -326,8 +375,8 @@ public class AbstractRouterFunctionVisitor {
 	/**
 	 * Add header.
 	 *
-	 * @param mediaType the media type
-	 * @param header the header
+	 * @param mediaType          the media type
+	 * @param header             the header
 	 * @param routerFunctionData the router function data
 	 */
 	private void addHeader(String mediaType, String header, RouterFunctionData routerFunctionData) {

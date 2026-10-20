@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -27,9 +27,11 @@ package test.org.springdoc.api.v30.app70;
 import test.org.springdoc.api.v30.AbstractSpringDocV30Test;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 
 public class SpringDocApp70Test extends AbstractSpringDocV30Test {
 
 	@SpringBootApplication
+	@ComponentScan(basePackages = "test.org.springdoc.api.v30.app70")
 	static class SpringDocTestApp {}
 }

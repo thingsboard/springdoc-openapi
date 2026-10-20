@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -34,13 +34,13 @@ import org.springframework.test.context.TestPropertySource;
 public class SpringDocApp24Test extends AbstractSpringDocTest {
 
 	@Test
-	public void test_apidocs_disabled() {
+	void test_apidocs_disabled() {
 		webTestClient.get().uri("/api-docs/swagger-config").exchange()
 				.expectStatus().isOk().expectBody()
 				.jsonPath("$.url").isEqualTo("/api-docs/xxx/v1/openapi.yml")
 				.jsonPath("$.configUrl").isEqualTo("/api-docs/swagger-config")
 				.jsonPath("$.validatorUrl").isEqualTo("")
-				.jsonPath("$.oauth2RedirectUrl").isEqualTo("/webjars/swagger-ui/oauth2-redirect.html");
+				.jsonPath("$.oauth2RedirectUrl").isEqualTo("/swagger-ui/oauth2-redirect.html");
 	}
 
 	@SpringBootApplication

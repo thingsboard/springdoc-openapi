@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -40,6 +42,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
  * The type Router function data.
+ *
  * @author bnasslahsen
  */
 public class RouterFunctionData {
@@ -81,6 +84,11 @@ public class RouterFunctionData {
 	private RequestMethod[] methods;
 
 	/**
+	 * The Version.
+	 */
+	private String version;
+
+	/**
 	 * The Attributes.
 	 */
 	private Map<String, Object> attributes = new LinkedHashMap<>();
@@ -106,6 +114,7 @@ public class RouterFunctionData {
 		this.queryParams = functionData.getQueryParams();
 		this.methods = functionData.getMethods();
 		this.attributes = functionData.getAttributes();
+		this.version = functionData.getVersion();
 	}
 
 	/**
@@ -138,7 +147,7 @@ public class RouterFunctionData {
 	/**
 	 * Add query params.
 	 *
-	 * @param name the name
+	 * @param name  the name
 	 * @param value the value
 	 */
 	public void addQueryParams(String name, String value) {
@@ -151,7 +160,7 @@ public class RouterFunctionData {
 	 * @return the string [ ]
 	 */
 	public String[] getHeaders() {
-		return headers.toArray(new String[headers.size()]);
+		return headers.toArray(new String[0]);
 	}
 
 	/**
@@ -188,7 +197,7 @@ public class RouterFunctionData {
 	 * @return the string [ ]
 	 */
 	public String[] getConsumes() {
-		return consumes.toArray(new String[consumes.size()]);
+		return consumes.toArray(new String[0]);
 	}
 
 	/**
@@ -197,7 +206,7 @@ public class RouterFunctionData {
 	 * @return the string [ ]
 	 */
 	public String[] getParams() {
-		return params.toArray(new String[params.size()]);
+		return params.toArray(new String[0]);
 	}
 
 	/**
@@ -266,7 +275,7 @@ public class RouterFunctionData {
 	 * @return the string [ ]
 	 */
 	public String[] getProduces() {
-		return produces.toArray(new String[produces.size()]);
+		return produces.toArray(new String[0]);
 	}
 
 	/**
@@ -308,5 +317,23 @@ public class RouterFunctionData {
 	 */
 	public void addAttributes(Map<String, Object> attributes) {
 		this.attributes.putAll(attributes);
+	}
+
+	/**
+	 * Gets version.
+	 *
+	 * @return the version
+	 */
+	public String getVersion() {
+		return version;
+	}
+
+	/**
+	 * Sets version.
+	 *
+	 * @param version the version
+	 */
+	public void setVersion(String version) {
+		this.version = version;
 	}
 }

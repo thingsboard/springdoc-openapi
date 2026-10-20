@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ public class SampleResponseClass {
 
 	private boolean booleanValueAsFourthParameter;
 
-	@ArraySchema( arraySchema = @Schema( description = "${blahDescription.value}" ),
-			schema = @Schema( description = "${blahDescription.value}" ) )
+	@ArraySchema(arraySchema = @Schema(description = "${blahDescription.value}"),
+			schema = @Schema(description = "${blahDescription.value}"))
 	private List<String> listBlah;
 
 	public List<String> getListBlah() {

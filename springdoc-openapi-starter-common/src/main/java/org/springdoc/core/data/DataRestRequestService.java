@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -41,8 +43,10 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springdoc.core.customizers.DelegatingMethodParameterCustomizer;
 import org.springdoc.core.discoverer.SpringDocParameterNameDiscoverer;
 import org.springdoc.core.extractor.DelegatingMethodParameter;
+import org.springdoc.core.extractor.MethodParameterPojoExtractor;
 import org.springdoc.core.models.MethodAttributes;
 import org.springdoc.core.models.ParameterInfo;
 import org.springdoc.core.models.RequestBodyInfo;
@@ -58,13 +62,15 @@ import org.springframework.data.rest.core.mapping.ResourceMetadata;
 import org.springframework.data.rest.webmvc.PersistentEntityResource;
 import org.springframework.data.rest.webmvc.support.BackendId;
 import org.springframework.data.rest.webmvc.support.DefaultedPageable;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.method.HandlerMethod;
 
+import static org.springdoc.core.utils.SpringDocUtils.getParameterAnnotations;
+
 /**
  * The type Data rest request builder.
+ *
  * @author bnasslahsen
  */
 public class DataRestRequestService {
@@ -93,34 +99,45 @@ public class DataRestRequestService {
 	 * The Spring doc data rest utils.
 	 */
 	private final SpringDocDataRestUtils springDocDataRestUtils;
+	
+	/**
+	 * The Optional delegating method parameter customizers.
+	 */
+	private final Optional<List<DelegatingMethodParameterCustomizer>> optionalDelegatingMethodParameterCustomizers;
+
+	/**
+	 * The Method parameter pojo extractor.
+	 */
+	private final MethodParameterPojoExtractor methodParameterPojoExtractor;
 
 	/**
 	 * Instantiates a new Data rest request builder.
 	 *
 	 * @param localSpringDocParameterNameDiscoverer the local spring doc parameter name discoverer
-	 * @param parameterBuilder the parameter builder
-	 * @param requestBodyService the request body builder
-	 * @param requestBuilder the request builder
-	 * @param springDocDataRestUtils the spring doc data rest utils
+	 * @param requestBuilder                        the request builder
+	 * @param springDocDataRestUtils                the spring doc data rest utils
 	 */
-	public DataRestRequestService(SpringDocParameterNameDiscoverer localSpringDocParameterNameDiscoverer, GenericParameterService parameterBuilder,
-			RequestBodyService requestBodyService, AbstractRequestService requestBuilder, SpringDocDataRestUtils springDocDataRestUtils) {
+	public DataRestRequestService(SpringDocParameterNameDiscoverer localSpringDocParameterNameDiscoverer,
+			AbstractRequestService requestBuilder,
+			SpringDocDataRestUtils springDocDataRestUtils) {
 		this.localSpringDocParameterNameDiscoverer = localSpringDocParameterNameDiscoverer;
-		this.parameterBuilder = parameterBuilder;
-		this.requestBodyService = requestBodyService;
 		this.requestBuilder = requestBuilder;
 		this.springDocDataRestUtils = springDocDataRestUtils;
+		this.optionalDelegatingMethodParameterCustomizers = requestBuilder.getOptionalDelegatingMethodParameterCustomizers();
+		this.methodParameterPojoExtractor = requestBuilder.getMethodParameterPojoExtractor();
+		this.parameterBuilder = requestBuilder.getParameterBuilder();
+		this.requestBodyService=requestBuilder.getRequestBodyBuilder();
 	}
 
 	/**
 	 * Build parameters.
 	 *
-	 * @param openAPI the open api
-	 * @param handlerMethod the handler method
-	 * @param requestMethod the request method
-	 * @param methodAttributes the method attributes
-	 * @param operation the operation
-	 * @param resourceMetadata the resource metadata
+	 * @param openAPI            the open api
+	 * @param handlerMethod      the handler method
+	 * @param requestMethod      the request method
+	 * @param methodAttributes   the method attributes
+	 * @param operation          the operation
+	 * @param resourceMetadata   the resource metadata
 	 * @param dataRestRepository the data rest repository
 	 */
 	public void buildParameters(OpenAPI openAPI, HandlerMethod handlerMethod, RequestMethod requestMethod, MethodAttributes methodAttributes,
@@ -141,17 +158,17 @@ public class DataRestRequestService {
 	/**
 	 * Build common parameters.
 	 *
-	 * @param openAPI the open api
-	 * @param requestMethod the request method
-	 * @param methodAttributes the method attributes
-	 * @param operation the operation
-	 * @param pNames the p names
-	 * @param parameters the parameters
+	 * @param openAPI            the open api
+	 * @param requestMethod      the request method
+	 * @param methodAttributes   the method attributes
+	 * @param operation          the operation
+	 * @param pNames             the p names
+	 * @param parameters         the parameters
 	 * @param dataRestRepository the data rest repository
 	 */
 	public void buildCommonParameters(OpenAPI openAPI, RequestMethod requestMethod, MethodAttributes methodAttributes, Operation operation, String[] pNames, MethodParameter[] parameters,
 			DataRestRepository dataRestRepository) {
-		parameters = DelegatingMethodParameter.customize(pNames, parameters, parameterBuilder.getDelegatingMethodParameterCustomizer(), requestBuilder.isDefaultFlatParamObject());
+		parameters = DelegatingMethodParameter.customize(pNames, parameters, this.optionalDelegatingMethodParameterCustomizers, this.methodParameterPojoExtractor, requestBuilder.isDefaultFlatParamObject());
 		Class<?> domainType = dataRestRepository.getDomainType();
 		for (MethodParameter methodParameter : parameters) {
 			final String pName = methodParameter.getParameterName();
@@ -161,7 +178,7 @@ public class DataRestRequestService {
 			ParameterInfo parameterInfo = new ParameterInfo(pName, methodParameter, parameterBuilder, parameterDoc);
 			if (isParamToIgnore(methodParameter)) {
 				if (PersistentEntityResource.class.equals(methodParameter.getParameterType())) {
-					Schema<?> schema = SpringDocAnnotationsUtils.resolveSchemaFromType(domainType, openAPI.getComponents(), null, methodParameter.getParameterAnnotations(), openAPI.getSpecVersion());
+					Schema<?> schema = SpringDocAnnotationsUtils.resolveSchemaFromType(domainType, openAPI.getComponents(), null, getParameterAnnotations(methodParameter), openAPI.getSpecVersion());
 					parameterInfo.setParameterModel(new Parameter().schema(schema));
 				}
 				else if (methodParameter.getParameterAnnotation(BackendId.class) != null) {
@@ -175,7 +192,7 @@ public class DataRestRequestService {
 					parameterInfo.setParameterModel(parameter);
 				}
 				if (!ArrayUtils.isEmpty(methodParameter.getParameterAnnotations()))
-					parameter = requestBuilder.buildParams(parameterInfo, openAPI.getComponents(), requestMethod, null,
+					parameter = requestBuilder.buildParams(parameterInfo, openAPI.getComponents(), requestMethod, methodAttributes,
 							openAPI.getOpenapi());
 				addParameters(openAPI, requestMethod, methodAttributes, operation, methodParameter, parameterInfo, parameter);
 			}
@@ -185,10 +202,10 @@ public class DataRestRequestService {
 	/**
 	 * Build parameter from doc parameter.
 	 *
-	 * @param parameterDoc the parameter doc
-	 * @param components the components
+	 * @param parameterDoc       the parameter doc
+	 * @param components         the components
 	 * @param jsonViewAnnotation the json view annotation
-	 * @param locale the locale
+	 * @param locale             the locale
 	 * @return the parameter
 	 */
 	public Parameter buildParameterFromDoc(io.swagger.v3.oas.annotations.Parameter parameterDoc, Components components, JsonView jsonViewAnnotation, Locale locale) {
@@ -210,19 +227,19 @@ public class DataRestRequestService {
 	/**
 	 * Add parameters.
 	 *
-	 * @param openAPI the open api
-	 * @param requestMethod the request method
+	 * @param openAPI          the open api
+	 * @param requestMethod    the request method
 	 * @param methodAttributes the method attributes
-	 * @param operation the operation
-	 * @param methodParameter the method parameter
-	 * @param parameterInfo the parameter info
-	 * @param parameter the parameter
+	 * @param operation        the operation
+	 * @param methodParameter  the method parameter
+	 * @param parameterInfo    the parameter info
+	 * @param parameter        the parameter
 	 */
 	private void addParameters(OpenAPI openAPI, RequestMethod requestMethod, MethodAttributes methodAttributes, Operation operation,
 			MethodParameter methodParameter, ParameterInfo parameterInfo, Parameter parameter) {
-		List<Annotation> parameterAnnotations = Arrays.asList(methodParameter.getParameterAnnotations());
-		if (requestBuilder.isValidParameter(parameter)) {
-			requestBuilder.applyBeanValidatorAnnotations(parameter, parameterAnnotations);
+		List<Annotation> parameterAnnotations = Arrays.asList(getParameterAnnotations(methodParameter));
+		if (requestBuilder.isValidParameter(parameter, methodAttributes)) {
+			requestBuilder.applyBeanValidatorAnnotations(methodParameter, parameter, parameterAnnotations, parameterInfo.isParameterObject(), openAPI.getOpenapi());
 			operation.addParametersItem(parameter);
 		}
 		else if (!RequestMethod.GET.equals(requestMethod)) {
@@ -248,6 +265,6 @@ public class DataRestRequestService {
 	 */
 	private boolean isHeaderToIgnore(MethodParameter methodParameter) {
 		RequestHeader requestHeader = methodParameter.getParameterAnnotation(RequestHeader.class);
-		return requestHeader != null && HttpHeaders.ACCEPT.equals(requestHeader.value());
+		return requestHeader != null;
 	}
 }

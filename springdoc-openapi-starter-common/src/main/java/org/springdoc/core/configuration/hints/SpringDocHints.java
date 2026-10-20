@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -26,6 +28,7 @@ package org.springdoc.core.configuration.hints;
 
 import java.util.Arrays;
 
+import com.fasterxml.jackson.databind.BeanDescription;
 import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.filter.SpecFilter;
 import io.swagger.v3.core.jackson.ApiResponsesSerializer;
@@ -36,6 +39,7 @@ import io.swagger.v3.core.jackson.mixin.DateSchemaMixin;
 import io.swagger.v3.core.jackson.mixin.Discriminator31Mixin;
 import io.swagger.v3.core.jackson.mixin.ExampleMixin;
 import io.swagger.v3.core.jackson.mixin.ExtensionsMixin;
+import io.swagger.v3.core.jackson.mixin.Info31Mixin;
 import io.swagger.v3.core.jackson.mixin.MediaTypeMixin;
 import io.swagger.v3.core.jackson.mixin.OpenAPI31Mixin;
 import io.swagger.v3.core.jackson.mixin.OpenAPIMixin;
@@ -58,6 +62,7 @@ import io.swagger.v3.oas.models.media.EmailSchema;
 import io.swagger.v3.oas.models.media.EncodingProperty;
 import io.swagger.v3.oas.models.media.FileSchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
+import io.swagger.v3.oas.models.media.JsonSchema;
 import io.swagger.v3.oas.models.media.MapSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.NumberSchema;
@@ -73,8 +78,8 @@ import io.swagger.v3.oas.models.parameters.QueryParameter;
 import io.swagger.v3.oas.models.security.Scopes;
 import io.swagger.v3.oas.models.servers.ServerVariables;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.springdoc.core.configuration.SpringDocUIConfiguration;
 import org.springdoc.core.properties.SpringDocConfigProperties.ModelConverters;
+import org.springdoc.core.properties.SwaggerUiConfigProperties;
 
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
@@ -82,10 +87,14 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
 /**
  * The type Spring doc hints.
+ *
  * @author bnasslahsen
  */
 public class SpringDocHints implements RuntimeHintsRegistrar {
 
+	/**
+	 * The Types to register.
+	 */
 	static Class[] typesToRegister = {
 			//swagger-models
 			io.swagger.v3.oas.models.security.SecurityScheme.Type.class,
@@ -104,6 +113,7 @@ public class SpringDocHints implements RuntimeHintsRegistrar {
 			io.swagger.v3.oas.models.media.Schema.class,
 			io.swagger.v3.oas.models.media.Content.class,
 			io.swagger.v3.oas.models.media.ArraySchema.class,
+			io.swagger.v3.oas.models.media.JsonSchema.class,
 			io.swagger.v3.oas.models.responses.ApiResponse.class,
 			io.swagger.v3.oas.models.responses.ApiResponses.class,
 			io.swagger.v3.oas.models.ExternalDocumentation.class,
@@ -113,6 +123,7 @@ public class SpringDocHints implements RuntimeHintsRegistrar {
 			io.swagger.v3.oas.models.Operation.class,
 			io.swagger.v3.oas.models.headers.Header.class,
 			ModelConverter.class,
+			io.swagger.v3.core.converter.ModelConverterContextImpl.class,
 			ModelConverters.class,
 			SpecFilter.class,
 			MediaType.class,
@@ -123,10 +134,6 @@ public class SpringDocHints implements RuntimeHintsRegistrar {
 			OpenAPIMixin.class,
 			OperationMixin.class,
 			SchemaMixin.class,
-			Schema31Mixin.class,
-			Components31Mixin.class,
-			OpenAPI31Mixin.class,
-			Discriminator31Mixin.class,
 			Paths.class,
 			XML.class,
 			UUIDSchema.class,
@@ -159,12 +166,23 @@ public class SpringDocHints implements RuntimeHintsRegistrar {
 			DateSchemaMixin.class,
 			ExampleMixin.class,
 			MediaTypeMixin.class,
+			//oas 3.1
+			Schema31Mixin.class,
+			Schema31Mixin.TypeSerializer.class,
+			Components31Mixin.class,
+			OpenAPI31Mixin.class,
+			Discriminator31Mixin.class,
+			Info31Mixin.class,
+			Schema31Mixin.TypeSerializer.class,
+			JsonSchema.class,
 			//springdoc classes
 			org.springdoc.core.annotations.ParameterObject.class,
 			org.springdoc.core.converters.models.Pageable.class,
 			org.springdoc.core.extractor.DelegatingMethodParameter.class,
 			// spring
-			org.springframework.core.MethodParameter.class
+			org.springframework.core.MethodParameter.class,
+			// jackson
+			BeanDescription.class,
 	};
 
 	@Override
@@ -173,25 +191,28 @@ public class SpringDocHints implements RuntimeHintsRegistrar {
 				.registerJdkProxy(org.springframework.web.context.request.NativeWebRequest.class);
 		hints.reflection()
 				.registerType(java.lang.Module.class,
-						hint -> hint.withMembers(MemberCategory.DECLARED_FIELDS,
+						hint -> hint.withMembers(MemberCategory.ACCESS_DECLARED_FIELDS,
 								MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
 								MemberCategory.INVOKE_DECLARED_METHODS))
 				.registerType(java.lang.ModuleLayer.class, MemberCategory.INVOKE_DECLARED_METHODS)
 				.registerType(java.lang.module.Configuration.class, MemberCategory.INVOKE_DECLARED_METHODS)
-				.registerType(java.lang.module.ResolvedModule.class, MemberCategory.INVOKE_DECLARED_METHODS);
+				.registerType(java.lang.module.ResolvedModule.class, MemberCategory.INVOKE_DECLARED_METHODS)
+				.registerType(java.lang.invoke.MethodHandles.Lookup.class,
+						hint -> hint.withMembers(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+								MemberCategory.INVOKE_DECLARED_METHODS));
 		//swagger-models
 		Arrays.stream(typesToRegister).forEach(aClass ->
 				hints.reflection().registerType(aClass,
 						hint -> hint.withMembers(
-								MemberCategory.DECLARED_FIELDS,
+								MemberCategory.ACCESS_DECLARED_FIELDS,
 								MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
 								MemberCategory.INVOKE_DECLARED_METHODS
 						)));
 
 		//springdoc
 		hints.reflection().registerField(FieldUtils.getDeclaredField(io.swagger.v3.core.converter.ModelConverters.class, "converters", true));
-		hints.reflection().registerType(org.springdoc.core.utils.Constants.class, hint -> hint.withMembers(MemberCategory.DECLARED_FIELDS));
-		hints.resources().registerPattern(SpringDocUIConfiguration.SPRINGDOC_CONFIG_PROPERTIES)
+		hints.reflection().registerType(org.springdoc.core.utils.Constants.class, hint -> hint.withMembers(MemberCategory.ACCESS_DECLARED_FIELDS));
+		hints.resources().registerPattern(SwaggerUiConfigProperties.SPRINGDOC_CONFIG_PROPERTIES)
 				.registerResourceBundle("sun.util.resources.LocaleNames");
 	}
 

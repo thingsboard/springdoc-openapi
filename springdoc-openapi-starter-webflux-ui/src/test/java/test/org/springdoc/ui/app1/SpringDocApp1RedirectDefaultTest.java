@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -29,11 +29,11 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 public class SpringDocApp1RedirectDefaultTest extends AbstractSpringDocTest {
 
 	@Test
-	public void shouldRedirectWithDefaultQueryParams() {
+	void shouldRedirectWithDefaultQueryParams() {
 		WebTestClient.ResponseSpec responseSpec = webTestClient.get().uri("/swagger-ui.html").exchange()
 				.expectStatus().isFound();
 		responseSpec.expectHeader()
-				.value("Location", Matchers.is("/webjars/swagger-ui/index.html"));
+				.value("Location", Matchers.is("/swagger-ui/index.html"));
 
 		webTestClient.get().uri("/v3/api-docs/swagger-config").exchange()
 				.expectStatus().isOk().expectBody().jsonPath("$.validatorUrl").isEqualTo("");

@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -33,9 +35,11 @@ import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.core.util.AnnotationsUtils;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.Encoding;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.RequestBody;
+import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.StringUtils;
 import org.springdoc.core.models.MethodAttributes;
 import org.springdoc.core.models.ParameterInfo;
@@ -44,6 +48,7 @@ import org.springdoc.core.utils.PropertyResolverUtils;
 import org.springdoc.core.utils.SpringDocAnnotationsUtils;
 
 import org.springframework.core.MethodParameter;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestPart;
 
 import static org.springdoc.core.utils.SpringDocAnnotationsUtils.mergeSchema;
@@ -51,6 +56,7 @@ import static org.springdoc.core.utils.SpringDocAnnotationsUtils.mergeSchema;
 
 /**
  * The type Request body builder.
+ *
  * @author bnasslahsen
  */
 public class RequestBodyService {
@@ -68,7 +74,7 @@ public class RequestBodyService {
 	/**
 	 * Instantiates a new Request body builder.
 	 *
-	 * @param parameterBuilder the parameter builder
+	 * @param parameterBuilder      the parameter builder
 	 * @param propertyResolverUtils the property resolver utils
 	 */
 	public RequestBodyService(GenericParameterService parameterBuilder, PropertyResolverUtils propertyResolverUtils) {
@@ -80,12 +86,12 @@ public class RequestBodyService {
 	/**
 	 * Build request body from doc optional.
 	 *
-	 * @param requestBody the request body
-	 * @param requestBodyOp the request body op
-	 * @param methodAttributes the method attributes
-	 * @param components the components
+	 * @param requestBody        the request body
+	 * @param requestBodyOp      the request body op
+	 * @param methodAttributes   the method attributes
+	 * @param components         the components
 	 * @param jsonViewAnnotation the json view annotation
-	 * @param locale the locale
+	 * @param locale             the locale
 	 * @return the optional
 	 */
 	public Optional<RequestBody> buildRequestBodyFromDoc(
@@ -110,7 +116,7 @@ public class RequestBodyService {
 		}
 
 		if (requestBody.required()) {
-			requestBodyObject.setRequired(requestBody.required());
+			requestBodyObject.setRequired(true);
 			isEmpty = false;
 		}
 		if (requestBody.extensions().length > 0) {
@@ -125,7 +131,7 @@ public class RequestBodyService {
 		if (isEmpty)
 			return Optional.empty();
 
-		buildResquestBodyContent(requestBody, requestBodyOp, methodAttributes, components, jsonViewAnnotation, classConsumes, methodConsumes, requestBodyObject);
+		buildRequestBodyContent(requestBody, requestBodyOp, methodAttributes, components, jsonViewAnnotation, classConsumes, methodConsumes, requestBodyObject);
 
 		return Optional.of(requestBodyObject);
 	}
@@ -133,16 +139,19 @@ public class RequestBodyService {
 	/**
 	 * Build resquest body content.
 	 *
-	 * @param requestBody the request body
-	 * @param requestBodyOp the request body op
-	 * @param methodAttributes the method attributes
-	 * @param components the components
+	 * @param requestBody        the request body
+	 * @param requestBodyOp      the request body op
+	 * @param methodAttributes   the method attributes
+	 * @param components         the components
 	 * @param jsonViewAnnotation the json view annotation
-	 * @param classConsumes the class consumes
-	 * @param methodConsumes the method consumes
-	 * @param requestBodyObject the request body object
+	 * @param classConsumes      the class consumes
+	 * @param methodConsumes     the method consumes
+	 * @param requestBodyObject  the request body object
 	 */
-	private void buildResquestBodyContent(io.swagger.v3.oas.annotations.parameters.RequestBody requestBody, RequestBody requestBodyOp, MethodAttributes methodAttributes, Components components, JsonView jsonViewAnnotation, String[] classConsumes, String[] methodConsumes, RequestBody requestBodyObject) {
+	private void buildRequestBodyContent(io.swagger.v3.oas.annotations.parameters.RequestBody requestBody,
+			RequestBody requestBodyOp, MethodAttributes methodAttributes,
+			Components components, JsonView jsonViewAnnotation, String[] classConsumes,
+			String[] methodConsumes, RequestBody requestBodyObject) {
 		Optional<Content> optionalContent = SpringDocAnnotationsUtils
 				.getContent(requestBody.content(), getConsumes(classConsumes),
 						getConsumes(methodConsumes), null, components, jsonViewAnnotation, parameterBuilder.isOpenapi31());
@@ -194,9 +203,9 @@ public class RequestBodyService {
 	/**
 	 * Build request body from doc optional.
 	 *
-	 * @param requestBody the request body
+	 * @param requestBody      the request body
 	 * @param methodAttributes the method attributes
-	 * @param components the components
+	 * @param components       the components
 	 * @return the optional
 	 */
 	public Optional<RequestBody> buildRequestBodyFromDoc(io.swagger.v3.oas.annotations.parameters.RequestBody requestBody,
@@ -207,11 +216,11 @@ public class RequestBodyService {
 	/**
 	 * Build request body from doc optional.
 	 *
-	 * @param requestBody the request body
-	 * @param methodAttributes the method attributes
-	 * @param components the components
+	 * @param requestBody        the request body
+	 * @param methodAttributes   the method attributes
+	 * @param components         the components
 	 * @param jsonViewAnnotation the json view annotation
-	 * @param locale the locale
+	 * @param locale             the locale
 	 * @return the optional
 	 */
 	public Optional<RequestBody> buildRequestBodyFromDoc(io.swagger.v3.oas.annotations.parameters.RequestBody requestBody,
@@ -223,10 +232,11 @@ public class RequestBodyService {
 	/**
 	 * Build request body from doc optional.
 	 *
-	 * @param requestBody the request body
-	 * @param requestBodyOp the request body op
+	 * @param requestBody      the request body
+	 * @param requestBodyOp    the request body op
 	 * @param methodAttributes the method attributes
-	 * @param components the components
+	 * @param components       the components
+	 * @param locale           the locale
 	 * @return the optional
 	 */
 	public Optional<RequestBody> buildRequestBodyFromDoc(
@@ -238,20 +248,15 @@ public class RequestBodyService {
 	/**
 	 * Calculate request body info.
 	 *
-	 * @param components the components
+	 * @param components       the components
 	 * @param methodAttributes the method attributes
-	 * @param parameterInfo the parameter info
-	 * @param requestBodyInfo the request body info
+	 * @param parameterInfo    the parameter info
+	 * @param requestBodyInfo  the request body info
 	 */
 	public void calculateRequestBodyInfo(Components components, MethodAttributes methodAttributes,
 			ParameterInfo parameterInfo, RequestBodyInfo requestBodyInfo) {
-		RequestBody requestBody = requestBodyInfo.getRequestBody();
+		RequestBody requestBody;
 		MethodParameter methodParameter = parameterInfo.getMethodParameter();
-		// Get it from parameter level, if not present
-		if (requestBody == null) {
-			io.swagger.v3.oas.annotations.parameters.RequestBody requestBodyDoc = methodParameter.getParameterAnnotation(io.swagger.v3.oas.annotations.parameters.RequestBody.class);
-			requestBody = this.buildRequestBodyFromDoc(requestBodyDoc, methodAttributes, components).orElse(null);
-		}
 
 		RequestPart requestPart = methodParameter.getParameterAnnotation(RequestPart.class);
 		String paramName = null;
@@ -263,39 +268,40 @@ public class RequestBodyService {
 		paramName = StringUtils.defaultIfEmpty(paramName, parameterInfo.getpName());
 		parameterInfo.setpName(paramName);
 
-		requestBody = buildRequestBody(requestBody, components, methodAttributes, parameterInfo,
+		io.swagger.v3.oas.annotations.parameters.RequestBody requestBodyDoc = methodParameter.getParameterAnnotation(io.swagger.v3.oas.annotations.parameters.RequestBody.class);
+		requestBody = buildRequestBody(requestBodyDoc, components, methodAttributes, parameterInfo,
 				requestBodyInfo);
 		requestBodyInfo.setRequestBody(requestBody);
 	}
 
 	/**
-	 * Build request body request body.
+	 * Build request body.
 	 *
-	 * @param requestBody the request body
-	 * @param components the components
+	 * @param requestBodyDoc      the request body
+	 * @param components       the components
 	 * @param methodAttributes the method attributes
-	 * @param parameterInfo the parameter info
-	 * @param requestBodyInfo the request body info
+	 * @param parameterInfo    the parameter info
+	 * @param requestBodyInfo  the request body info
 	 * @return the request body
 	 */
-	private RequestBody buildRequestBody(RequestBody requestBody, Components components,
+	private RequestBody buildRequestBody(io.swagger.v3.oas.annotations.parameters.RequestBody requestBodyDoc, Components components,
 			MethodAttributes methodAttributes,
 			ParameterInfo parameterInfo, RequestBodyInfo requestBodyInfo) {
+		RequestBody requestBody = requestBodyInfo.getRequestBody();
 		if (requestBody == null) {
 			requestBody = new RequestBody();
 			requestBodyInfo.setRequestBody(requestBody);
 		}
 
-		if (requestBody.getContent() == null) {
-			Schema<?> schema = parameterBuilder.calculateSchema(components, parameterInfo, requestBodyInfo,
-					methodAttributes.getJsonViewAnnotationForRequestBody());
-			buildContent(requestBody, methodAttributes, schema);
-		}
-		else if (!methodAttributes.isWithResponseBodySchemaDoc()) {
-			Schema<?> schema = parameterBuilder.calculateSchema(components, parameterInfo, requestBodyInfo,
-					methodAttributes.getJsonViewAnnotationForRequestBody());
-			mergeContent(requestBody, methodAttributes, schema);
-		}
+		if (requestBodyDoc != null)
+			requestBody = this.buildRequestBodyFromDoc(requestBodyDoc, methodAttributes, components).orElse(requestBody);
+
+		Schema<?> schema = parameterBuilder.calculateSchema(components, parameterInfo, requestBodyInfo,
+				methodAttributes.getJsonViewAnnotationForRequestBody());
+		Map<String, Encoding> parameterEncoding = getParameterEncoding(parameterInfo);
+		// If a content type is explicitly stated with a @RequestBody annotation, yield to that content type
+		if (!methodAttributes.isWithResponseBodySchemaDoc())
+			buildContent(requestBody, methodAttributes, schema, parameterEncoding);
 
 		// Add requestBody javadoc
 		if (StringUtils.isBlank(requestBody.getDescription()) && parameterBuilder.getJavadocProvider() != null
@@ -309,42 +315,26 @@ public class RequestBodyService {
 	}
 
 	/**
-	 * Merge content.
-	 *
-	 * @param requestBody the request body
-	 * @param methodAttributes the method attributes
-	 * @param schema the schema
-	 */
-	private void mergeContent(RequestBody requestBody, MethodAttributes methodAttributes, Schema<?> schema) {
-		Content content = requestBody.getContent();
-		buildContent(requestBody, methodAttributes, schema, content);
-	}
-
-	/**
 	 * Build content.
 	 *
-	 * @param requestBody the request body
-	 * @param methodAttributes the method attributes
-	 * @param schema the schema
+	 * @param requestBody       the request body
+	 * @param methodAttributes  the method attributes
+	 * @param schema            the schema
+	 * @param parameterEncoding the parameter encoding
 	 */
-	private void buildContent(RequestBody requestBody, MethodAttributes methodAttributes, Schema<?> schema) {
-		Content content = new Content();
-		buildContent(requestBody, methodAttributes, schema, content);
-	}
+	private void buildContent(RequestBody requestBody, MethodAttributes methodAttributes, Schema<?> schema, Map<String, Encoding> parameterEncoding) {
+		Content content;
+		if (requestBody.getContent() == null) {
+			content = new Content();
+		}
+		else {
+			content = requestBody.getContent();
+		}
 
-	/**
-	 * Build content.
-	 *
-	 * @param requestBody the request body
-	 * @param methodAttributes the method attributes
-	 * @param schema the schema
-	 * @param content the content
-	 */
-	private void buildContent(RequestBody requestBody, MethodAttributes methodAttributes, Schema<?> schema, Content content) {
 		for (String value : methodAttributes.getMethodConsumes()) {
-			io.swagger.v3.oas.models.media.MediaType mediaTypeObject = new io.swagger.v3.oas.models.media.MediaType();
-			mediaTypeObject.setSchema(schema);
+			MediaType mediaTypeObject = new MediaType();
 			MediaType mediaType = content.get(value);
+			mediaTypeObject.setSchema(schema);
 			if (mediaType != null) {
 				if (mediaType.getExample() != null)
 					mediaTypeObject.setExample(mediaType.getExample());
@@ -352,9 +342,40 @@ public class RequestBodyService {
 					mediaTypeObject.setExamples(mediaType.getExamples());
 				if (mediaType.getEncoding() != null)
 					mediaTypeObject.setEncoding(mediaType.getEncoding());
+				if (mediaType.getSchema() != null)
+					mediaTypeObject.setSchema(mediaType.getSchema());
+			}
+			else if (!CollectionUtils.isEmpty(parameterEncoding)) {
+				mediaTypeObject.setEncoding(parameterEncoding);
 			}
 			content.addMediaType(value, mediaTypeObject);
 		}
 		requestBody.setContent(content);
+	}
+
+	/**
+	 * Gets parameter encoding.
+	 *
+	 * @param parameterInfo the parameter info
+	 * @return the parameter encoding
+	 */
+	@NotNull
+	private Map<String, Encoding> getParameterEncoding(ParameterInfo parameterInfo) {
+		if (parameterInfo.getParameterModel() != null) {
+			Content parameterContent = parameterInfo.getParameterModel().getContent();
+			if (parameterContent != null && parameterContent.size() == 1) {
+				Map<String, Encoding> encoding = parameterContent.values().iterator().next().getEncoding();
+				if (!CollectionUtils.isEmpty(encoding)) {
+					return encoding;
+				}
+				else {
+					String encodingContentType = parameterContent.keySet().iterator().next();
+					if(StringUtils.isNotBlank(encodingContentType)) {
+						return Map.of(parameterInfo.getpName(), new Encoding().contentType(encodingContentType));
+					}
+				}
+			}
+		}
+		return Map.of();
 	}
 }

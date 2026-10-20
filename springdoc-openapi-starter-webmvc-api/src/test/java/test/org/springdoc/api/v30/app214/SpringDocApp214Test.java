@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2023 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * <p>
  * A test for {@link SpecPropertiesCustomizer}
  */
-@SpringBootTest
 @TestPropertySource(properties = { "springdoc.group-configs[0].group=Group0",
 		"springdoc.group-configs[0].packages-to-scan=com.my-package",
 		"springdoc.group-configs[1].group=Group1",
@@ -44,18 +43,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 		"springdoc.group-configs[2].packages-to-scan=com.my-package",
 		"springdoc.group-configs[3].group=Group3",
 		"springdoc.group-configs[3].packages-to-scan=com.my-package" })
-
 public class SpringDocApp214Test extends AbstractCommonTest {
 
 	@Autowired
 	private SpringDocConfigProperties springDocConfigProperties;
-	
-	@SpringBootApplication
-	static class SpringDocTestApp {}
 
 	@Test
-	public void testApp() throws Exception {
+	protected void testApp() throws Exception {
 		assertEquals(4, springDocConfigProperties.getGroupConfigs().stream().map(GroupConfig::getGroup).toList().size());
 	}
+
+	@SpringBootApplication
+	static class SpringDocTestApp {}
 
 }

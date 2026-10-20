@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ public class TrackerData {
 	@JsonProperty("timestamp")
 	Instant timestamp;
 
-	@Schema(name = "value", type = "number", format = "double", description = "The data value", required = true, example = "19.0")
+	@Schema(name = "value", types = "number", format = "double", description = "The data value", required = true, example = "19.0")
 	@JsonProperty("value")
 	Double value;
 

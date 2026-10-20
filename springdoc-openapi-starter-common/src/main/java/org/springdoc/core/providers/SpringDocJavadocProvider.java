@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2023 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -26,8 +28,11 @@ package org.springdoc.core.providers;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.github.therapi.runtimejavadoc.ClassJavadoc;
@@ -44,6 +49,7 @@ import static java.util.stream.Collectors.toMap;
 
 /**
  * The type Spring doc javadoc provider.
+ *
  * @author bnasslahsen
  */
 public class SpringDocJavadocProvider implements JavadocProvider {
@@ -52,6 +58,11 @@ public class SpringDocJavadocProvider implements JavadocProvider {
 	 * The comment formatter.
 	 */
 	private final CommentFormatter formatter = new CommentFormatter();
+
+	/**
+	 * The Class javadoc cache.
+	 */
+	private final Map<Class<?>, ClassJavadoc> classJavadocCache = new HashMap<>();
 
 
 	/**
@@ -62,7 +73,7 @@ public class SpringDocJavadocProvider implements JavadocProvider {
 	 */
 	@Override
 	public String getClassJavadoc(Class<?> cl) {
-		ClassJavadoc classJavadoc = RuntimeJavadoc.getJavadoc(cl);
+		ClassJavadoc classJavadoc = getJavadoc(cl);
 		return formatter.format(classJavadoc.getComment());
 	}
 
@@ -74,7 +85,7 @@ public class SpringDocJavadocProvider implements JavadocProvider {
 	 */
 	@Override
 	public Map<String, String> getRecordClassParamJavadoc(Class<?> cl) {
-		ClassJavadoc classJavadoc = RuntimeJavadoc.getJavadoc(cl);
+		ClassJavadoc classJavadoc = getJavadoc(cl);
 		return classJavadoc.getRecordComponents().stream()
 				.collect(Collectors.toMap(ParamJavadoc::getName, recordClass -> formatter.format(recordClass.getComment())));
 	}
@@ -87,7 +98,7 @@ public class SpringDocJavadocProvider implements JavadocProvider {
 	 */
 	@Override
 	public String getMethodJavadocDescription(Method method) {
-		MethodJavadoc methodJavadoc = RuntimeJavadoc.getJavadoc(method);
+		MethodJavadoc methodJavadoc = getJavadoc(method);
 		return formatter.format(methodJavadoc.getComment());
 	}
 
@@ -99,7 +110,7 @@ public class SpringDocJavadocProvider implements JavadocProvider {
 	 */
 	@Override
 	public String getMethodJavadocReturn(Method method) {
-		MethodJavadoc methodJavadoc = RuntimeJavadoc.getJavadoc(method);
+		MethodJavadoc methodJavadoc = getJavadoc(method);
 		return formatter.format(methodJavadoc.getReturns());
 	}
 
@@ -110,7 +121,7 @@ public class SpringDocJavadocProvider implements JavadocProvider {
 	 * @return the method throws (name-description map)
 	 */
 	public Map<String, String> getMethodJavadocThrows(Method method) {
-		return RuntimeJavadoc.getJavadoc(method)
+		return getJavadoc(method)
 				.getThrows()
 				.stream()
 				.collect(toMap(ThrowsJavadoc::getName, javadoc -> formatter.format(javadoc.getComment())));
@@ -120,12 +131,12 @@ public class SpringDocJavadocProvider implements JavadocProvider {
 	 * Gets param javadoc.
 	 *
 	 * @param method the method
-	 * @param name the name
+	 * @param name   the name
 	 * @return the param javadoc
 	 */
 	@Override
 	public String getParamJavadoc(Method method, String name) {
-		MethodJavadoc methodJavadoc = RuntimeJavadoc.getJavadoc(method);
+		MethodJavadoc methodJavadoc = getJavadoc(method);
 		List<ParamJavadoc> paramsDoc = methodJavadoc.getParams();
 		return paramsDoc.stream().filter(paramJavadoc1 -> name.equals(paramJavadoc1.getName())).findAny()
 				.map(paramJavadoc1 -> formatter.format(paramJavadoc1.getComment())).orElse(null);
@@ -139,7 +150,7 @@ public class SpringDocJavadocProvider implements JavadocProvider {
 	 */
 	@Override
 	public String getFieldJavadoc(Field field) {
-		FieldJavadoc fieldJavadoc = RuntimeJavadoc.getJavadoc(field);
+		FieldJavadoc fieldJavadoc = getJavadoc(field);
 		return formatter.format(fieldJavadoc.getComment());
 	}
 
@@ -169,5 +180,39 @@ public class SpringDocJavadocProvider implements JavadocProvider {
 			return text.substring(0, dotIndex + 1);
 		}
 		return text;
+	}
+
+	private ClassJavadoc getJavadoc(Class<?> cl) {
+		ClassJavadoc classJavadoc = classJavadocCache.get(cl);
+		if (classJavadoc != null) {
+			return classJavadoc;
+		}
+		classJavadoc = RuntimeJavadoc.getJavadoc(cl);
+		classJavadocCache.put(cl, classJavadoc);
+		return classJavadoc;
+	}
+
+	private MethodJavadoc getJavadoc(Method method) {
+		ClassJavadoc classJavadoc = getJavadoc(method.getDeclaringClass());
+		List<String> paramTypes = Arrays.stream(method.getParameterTypes())
+				.map(Class::getCanonicalName)
+				.toList();
+		return classJavadoc.getMethods()
+				.stream()
+				.filter(it -> Objects.equals(method.getName(), it.getName()) && Objects.equals(paramTypes, it.getParamTypes()))
+				.findFirst().orElseGet(() -> MethodJavadoc.createEmpty(method));
+	}
+
+	private FieldJavadoc getJavadoc(Field field) {
+		ClassJavadoc classJavadoc = getJavadoc(field.getDeclaringClass());
+		return classJavadoc.getFields()
+				.stream()
+				.filter(it -> Objects.equals(field.getName(), it.getName()))
+				.findFirst().orElseGet(() -> FieldJavadoc.createEmpty(field.getName()));
+	}
+
+	@Override
+	public void clearCache() {
+		classJavadocCache.clear();
 	}
 }

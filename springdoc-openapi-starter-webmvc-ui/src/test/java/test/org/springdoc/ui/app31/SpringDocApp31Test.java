@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class SpringDocApp31Test extends AbstractSpringDocTest {
 
 	@Test
-	public void test_query_config() throws Exception {
+	void test_query_config() throws Exception {
 		mockMvc.perform(get("/api/"))
 				.andExpect(status().isFound())
 				.andExpect(header().string("Location", "/api/swagger-ui/index.html?showExtensions=true&configUrl=/v3/api-docs/swagger-config"));

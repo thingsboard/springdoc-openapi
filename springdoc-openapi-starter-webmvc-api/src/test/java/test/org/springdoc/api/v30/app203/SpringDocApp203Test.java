@@ -2,7 +2,7 @@
  *
  *  *
  *  *  *
- *  *  *  * Copyright 2019-2023 the original author or authors.
+ *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *
  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  * you may not use this file except in compliance with the License.
@@ -39,19 +39,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = { "springdoc.group-configs[0].group=mygroup", "springdoc.group-configs[0].paths-to-match=/test" })
 public class SpringDocApp203Test extends AbstractSpringDocV30Test {
 
-	@SpringBootApplication
-	@Import({
-			OrderDemo.Customizer3.class,
-			OrderDemo.Customizer2.class,
-			OrderDemo.Customizer1.class,
-	})
-	static class SpringDocTestApp {}
-
 	@Test
-	public void testApp1() throws Exception {
+	void testApp1() throws Exception {
 		mockMvc.perform(get(Constants.DEFAULT_API_DOCS_URL + "/mygroup"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.openapi", is("3.0.1")))
 				.andExpect(content().json(getContent("results/3.0.1/app203.json"), true));
 	}
+
+	@SpringBootApplication
+	@Import({
+			OrderDemo.Customizer1.class,
+			OrderDemo.Customizer2.class,
+			OrderDemo.Customizer3.class,
+	})
+	static class SpringDocTestApp {}
 }

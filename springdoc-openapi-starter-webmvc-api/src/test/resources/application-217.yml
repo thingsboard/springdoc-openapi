@@ -1,0 +1,73 @@
+springdoc:
+  group-configs:
+    - group: demo
+      display-name: Example Interfaces
+      packages-to-scan:
+        - test.org.springdoc.api.v30.app217
+        - test.org.springdoc.api.v31.app217
+      open-api:
+        info:
+          title: Example Interfaces
+          description: List of Example Interfaces
+          version: v1.0
+          termsOfService: http://localhost:8080/
+          license:
+            name: Apache 2.0
+        servers:
+          - url: "https://demo.example.com"
+            description: "demo Server"
+        components:
+          security-schemes:
+            auth:
+              type: http
+              scheme: bearer
+              bearer-format: JWT
+        external-docs:
+          description: Example External Docs demo
+          url: "https://example.com/external-docs-demo"
+    - group: user
+      display-name: User Interfaces
+      packages-to-scan:
+        - test.org.springdoc.api.v30.app217
+        - test.org.springdoc.api.v31.app217
+      open-api:
+        info:
+          title: User Interfaces
+          description: List of User Interfaces
+          version: v1.0
+          termsOfService: http://localhost:8080/
+          license:
+            name: Apache 2.0
+        servers:
+          - url: "https://user.example.com"
+            description: "user Server"
+        components:
+          schemas:
+            PersonDTO:
+              description: Description for PersonDTO component
+              properties:
+                name:
+                  description: Description for 'name' property
+                  example: Example value for 'name' property
+        external-docs:
+          description: Example External Docs user
+          url: "https://example.com/external-docs-user"
+  open-api:
+    servers:
+      - url: "https://api.example.com"
+        description: "Production Server"
+      - url: "https://staging.example.com"
+        description: "Staging Server"
+    info:
+      title: Api info title
+      description: Api info description
+      version: Api info version
+    components:
+      schemas:
+        PersonDTO:
+          description: Description for PersonDTO component
+          properties:
+            name:
+              description: Description for 'name' property
+              example: Example value for 'name' property
+  

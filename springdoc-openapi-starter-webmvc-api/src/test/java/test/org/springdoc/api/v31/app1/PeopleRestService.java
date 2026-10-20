@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotNull;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -109,5 +110,10 @@ public class PeopleRestService {
 			throw new RuntimeException("Person with such e-mail doesn't exists");
 		}
 		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping(path = "/api/test", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+	public void postSingleParameter(@RequestParam(name = "test_id") @NotNull final UUID testId) {
+		System.out.println("Received test_id: " + testId);
 	}
 }

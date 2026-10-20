@@ -32,6 +32,7 @@
             "description": "parameter from child of RequestParams",
             "required": true,
             "schema": {
+              "minLength": 1,
               "type": "string"
             }
           },
@@ -91,6 +92,7 @@
           {
             "name": "nested.param1",
             "in": "query",
+            "description": "nested string parameter",
             "required": false,
             "schema": {
               "type": "string"
@@ -99,6 +101,7 @@
           {
             "name": "nested.param2",
             "in": "query",
+            "description": "nested BigInteger parameter",
             "required": false,
             "schema": {
               "type": "integer"
@@ -180,6 +183,7 @@
             }
           },
           "childParam": {
+            "minLength": 1,
             "type": "string"
           }
         }

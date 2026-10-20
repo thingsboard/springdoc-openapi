@@ -3,6 +3,7 @@
 ######################
 /target/www/**
 /src/test/javascript/coverage/
+.flattened-pom.xml
 
 ######################
 # Node
@@ -143,3 +144,9 @@ Desktop.ini
 # ESLint
 ######################
 .eslintcache
+/CLAUDE.md
+/.claude/
+/default.profraw
+
+# TypeScript incremental build cache
+*.tsbuildinfo

@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import org.springframework.context.annotation.Configuration;
 /**
  * This class contributes OpenAPI <a href=
  * "https://swagger.io/docs/specification/adding-examples/">examples</a>.
- *
  * Each example is contributed through a bean typed as a map entry
  * (Map.Entry<String, Example>) and referenced through a constant by a resource
  * operation's @ApiResponse.

@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -24,6 +26,8 @@
 
 package org.springdoc.core.service;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -40,14 +45,16 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.core.jackson.TypeNameResolver;
 import io.swagger.v3.core.util.AnnotationsUtils;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Webhook;
+import io.swagger.v3.oas.annotations.Webhooks;
 import io.swagger.v3.oas.annotations.security.SecuritySchemes;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.tags.Tags;
@@ -58,7 +65,6 @@ import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
@@ -81,6 +87,7 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.http.HttpRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -91,12 +98,14 @@ import org.springframework.web.method.HandlerMethod;
 import static org.springdoc.core.utils.Constants.DEFAULT_SERVER_DESCRIPTION;
 import static org.springdoc.core.utils.Constants.DEFAULT_TITLE;
 import static org.springdoc.core.utils.Constants.DEFAULT_VERSION;
+import static org.springdoc.core.utils.SpringDocUtils.cloneViaJson;
 import static org.springdoc.core.utils.SpringDocUtils.getConfig;
 
 /**
  * The type Open api builder.
  *
  * @author bnasslahsen
+ * @author zdary
  */
 public class OpenAPIService implements ApplicationContextAware {
 
@@ -104,6 +113,12 @@ public class OpenAPIService implements ApplicationContextAware {
 	 * The constant LOGGER.
 	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(OpenAPIService.class);
+
+	/**
+	 * The constant CAMEL_CASE_PATTERN.
+	 */
+	private static final Pattern CAMEL_CASE_PATTERN = Pattern.compile(
+			"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
 
 	/**
 	 * The Basic error controller.
@@ -141,9 +156,11 @@ public class OpenAPIService implements ApplicationContextAware {
 	private final SpringDocConfigProperties springDocConfigProperties;
 
 	/**
-	 * The Cached open api map.
+	 * The Cached open api map. Keyed by locale language tag and bounded to
+	 * {@code springdoc.cache.max-entries} entries, so that arbitrary {@code Accept-Language}
+	 * values sent by callers cannot grow it without limit.
 	 */
-	private final Map<String, OpenAPI> cachedOpenAPI = new HashMap<>();
+	private final Map<String, OpenAPI> cachedOpenAPI;
 
 	/**
 	 * The Property resolver utils.
@@ -169,11 +186,6 @@ public class OpenAPIService implements ApplicationContextAware {
 	 * The Is servers present.
 	 */
 	private boolean isServersPresent;
-
-	/**
-	 * The Server base url.
-	 */
-	private String serverBaseUrl;
 
 	/**
 	 * Instantiates a new Open api builder.
@@ -206,8 +218,26 @@ public class OpenAPIService implements ApplicationContextAware {
 		this.openApiBuilderCustomisers = openApiBuilderCustomizers;
 		this.serverBaseUrlCustomizers = serverBaseUrlCustomizers;
 		this.javadocProvider = javadocProvider;
+		this.cachedOpenAPI = createCachedOpenAPI(springDocConfigProperties.getCache().getMaxEntries());
 		if (springDocConfigProperties.isUseFqn())
 			TypeNameResolver.std.setUseFqn(true);
+	}
+
+	/**
+	 * Creates the bounded, access-ordered cache holding one OpenAPI description per locale.
+	 *
+	 * @param maxEntries the maximum number of entries to retain, always positive because
+	 * {@link SpringDocConfigProperties.Cache#setMaxEntries(int)} falls back to the default
+	 * for a non-positive value
+	 * @return the cache map, evicting the least recently used entry once full
+	 */
+	private static Map<String, OpenAPI> createCachedOpenAPI(int maxEntries) {
+		return Collections.synchronizedMap(new LinkedHashMap<>(16, 0.75f, true) {
+			@Override
+			protected boolean removeEldestEntry(Entry<String, OpenAPI> eldest) {
+				return size() > maxEntries;
+			}
+		});
 	}
 
 	/**
@@ -217,13 +247,7 @@ public class OpenAPIService implements ApplicationContextAware {
 	 * @return the string
 	 */
 	public static String splitCamelCase(String str) {
-		return str.replaceAll(
-						String.format(
-								"%s|%s|%s",
-								"(?<=[A-Z])(?=[A-Z][a-z])",
-								"(?<=[^A-Z])(?=[A-Z])",
-								"(?<=[A-Za-z])(?=[^A-Za-z])"),
-						"-")
+		return CAMEL_CASE_PATTERN.matcher(str).replaceAll("-")
 				.toLowerCase(Locale.ROOT);
 	}
 
@@ -243,14 +267,8 @@ public class OpenAPIService implements ApplicationContextAware {
 			calculatedOpenAPI.setPaths(new Paths());
 		}
 		else {
-			try {
-				ObjectMapper objectMapper = new ObjectMapper();
-				calculatedOpenAPI = objectMapper.readValue(objectMapper.writeValueAsString(openAPI), OpenAPI.class);
-			}
-			catch (JsonProcessingException e) {
-				LOGGER.warn("Json Processing Exception occurred: {}", e.getMessage());
-				calculatedOpenAPI = openAPI;
-			}
+			calculatedOpenAPI = cloneViaJson(openAPI, OpenAPI.class, new ObjectMapper()
+				.setDefaultPropertyInclusion(com.fasterxml.jackson.annotation.JsonInclude.Value.construct(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL, com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)));
 		}
 
 		if (apiDef.isPresent()) {
@@ -281,20 +299,21 @@ public class OpenAPIService implements ApplicationContextAware {
 	private void initializeHiddenRestController() {
 		if (basicErrorController != null)
 			getConfig().addHiddenRestControllers(basicErrorController);
-		List<Class<?>> hiddenRestControllers = this.mappingsMap.entrySet().parallelStream()
+		List<Class<?>> hiddenRestControllers = this.mappingsMap.entrySet().stream()
 				.filter(controller -> (AnnotationUtils.findAnnotation(controller.getValue().getClass(),
 						Hidden.class) != null)).map(controller -> controller.getValue().getClass())
 				.collect(Collectors.toList());
 		if (!CollectionUtils.isEmpty(hiddenRestControllers))
-			getConfig().addHiddenRestControllers(hiddenRestControllers.toArray(new Class<?>[hiddenRestControllers.size()]));
+			getConfig().addHiddenRestControllers(hiddenRestControllers.toArray(new Class<?>[0]));
 	}
 
 	/**
 	 * Update servers open api.
 	 *
-	 * @param openAPI the open api
+	 * @param serverBaseUrl the server base url
+	 * @param openAPI       the open api
 	 */
-	public void updateServers(OpenAPI openAPI) {
+	public void updateServers(String serverBaseUrl, OpenAPI openAPI) {
 		if (!isServersPresent && serverBaseUrl != null)        // default server value
 		{
 			Server server = new Server().url(serverBaseUrl).description(DEFAULT_SERVER_DESCRIPTION);
@@ -333,7 +352,7 @@ public class OpenAPIService implements ApplicationContextAware {
 		if (!CollectionUtils.isEmpty(tagsStr))
 			tagsStr = tagsStr.stream()
 					.map(str -> propertyResolverUtils.resolve(str, locale))
-					.collect(Collectors.toSet());
+					.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		if (springdocTags.containsKey(handlerMethod)) {
 			io.swagger.v3.oas.models.tags.Tag tag = springdocTags.get(handlerMethod);
@@ -404,10 +423,10 @@ public class OpenAPIService implements ApplicationContextAware {
 		Set<Tags> tagsSet = AnnotatedElementUtils
 				.findAllMergedAnnotations(method, Tags.class);
 		Set<Tag> methodTags = tagsSet.stream()
-				.flatMap(x -> Stream.of(x.value())).collect(Collectors.toSet());
+				.flatMap(x -> Stream.of(x.value())).collect(Collectors.toCollection(LinkedHashSet::new));
 		methodTags.addAll(AnnotatedElementUtils.findAllMergedAnnotations(method, Tag.class));
 		if (!CollectionUtils.isEmpty(methodTags)) {
-			tagsStr.addAll(methodTags.stream().map(tag -> propertyResolverUtils.resolve(tag.name(), locale)).collect(Collectors.toSet()));
+			tagsStr.addAll(methodTags.stream().map(tag -> propertyResolverUtils.resolve(tag.name(), locale)).collect(Collectors.toCollection(LinkedHashSet::new)));
 			List<Tag> allTags = new ArrayList<>(methodTags);
 			addTags(allTags, tags, locale);
 		}
@@ -447,10 +466,10 @@ public class OpenAPIService implements ApplicationContextAware {
 		Set<Tags> tagsSet = AnnotatedElementUtils
 				.findAllMergedAnnotations(beanType, Tags.class);
 		Set<Tag> classTags = tagsSet.stream()
-				.flatMap(x -> Stream.of(x.value())).collect(Collectors.toSet());
+				.flatMap(x -> Stream.of(x.value())).collect(Collectors.toCollection(LinkedHashSet::new));
 		classTags.addAll(AnnotatedElementUtils.findAllMergedAnnotations(beanType, Tag.class));
 		if (!CollectionUtils.isEmpty(classTags)) {
-			tagsStr.addAll(classTags.stream().map(tag -> propertyResolverUtils.resolve(tag.name(), locale)).collect(Collectors.toSet()));
+			tagsStr.addAll(classTags.stream().map(tag -> propertyResolverUtils.resolve(tag.name(), locale)).collect(Collectors.toCollection(LinkedHashSet::new)));
 			allTags.addAll(classTags);
 			addTags(allTags, tags, locale);
 		}
@@ -473,15 +492,14 @@ public class OpenAPIService implements ApplicationContextAware {
 		if (!CollectionUtils.isEmpty(properties)) {
 			LinkedHashMap<String, Schema> resolvedSchemas = properties.entrySet().stream().map(es -> {
 				es.setValue(resolveProperties(es.getValue(), locale));
-				if (es.getValue() instanceof ArraySchema arraySchema) {
-					resolveProperties(arraySchema.getItems(), locale);
+				if (es.getValue().getItems() != null) {
+					resolveProperties(es.getValue().getItems(), locale);
 				}
 				return es;
 			}).collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e2,
 					LinkedHashMap::new));
 			schema.setProperties(resolvedSchemas);
 		}
-
 		return schema;
 	}
 
@@ -489,18 +507,18 @@ public class OpenAPIService implements ApplicationContextAware {
 	 * Sets server base url.
 	 *
 	 * @param serverBaseUrl the server base url
+	 * @param httpRequest   the http request
+	 * @return the string
 	 */
-	public void setServerBaseUrl(String serverBaseUrl) {
+	public String calculateServerBaseUrl(String serverBaseUrl, HttpRequest httpRequest) {
 		String customServerBaseUrl = serverBaseUrl;
-
 		if (serverBaseUrlCustomizers.isPresent()) {
 			for (ServerBaseUrlCustomizer customizer : serverBaseUrlCustomizers.get()) {
-				customServerBaseUrl = customizer.customize(customServerBaseUrl);
+				customServerBaseUrl = customizer.customize(customServerBaseUrl, httpRequest);
 			}
 		}
 
-		this.serverBaseUrl = customServerBaseUrl;
-
+		return customServerBaseUrl;
 	}
 
 	/**
@@ -535,6 +553,105 @@ public class OpenAPIService implements ApplicationContextAware {
 		return Optional.ofNullable(apiDef);
 	}
 
+
+	/**
+	 * Gets webhooks from given classes.
+	 *
+	 * @param classes Array of classes to scan for webhooks.
+	 * @return An array of {@link Webhooks} annotations found in the given classes.
+	 */
+	public Webhooks[] getWebhooks(Class<?>[] classes) {
+        List<Webhooks> allWebhooks = new ArrayList<>();
+
+        for (Class<?> clazz : classes) {
+            // Class-level annotations
+            collectWebhooksFromElement(clazz, allWebhooks);
+
+            // Method-level annotations
+            for (Method method : clazz.getDeclaredMethods()) {
+                collectWebhooksFromElement(method, allWebhooks);
+            }
+        }
+
+        return allWebhooks.toArray(new Webhooks[0]);
+    }
+
+
+	/**
+	 * Retrieves all classes related to webhooks.
+	 * This method scans for classes annotated with {@link Webhooks} or {@link Webhook},
+	 * first checking Spring-managed beans and then falling back to classpath scanning
+	 * if no annotated beans are found.
+	 *
+	 * @return An array of classes related to webhooks.
+	 */
+	public Class<?>[] getWebhooksClasses() {
+        Set<Class<?>> allWebhookClassesToScan = new HashSet<>();
+
+        // First: scan Spring-managed beans
+        Map<String, Object> beans = context.getBeansWithAnnotation(Webhooks.class);
+
+        for (Object bean : beans.values()) {
+            Class<?> beanClass = bean.getClass();
+            allWebhookClassesToScan.add(beanClass);
+        }
+
+        // Fallback: classpath scanning
+        ClassPathScanningCandidateComponentProvider scanner =
+                new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter(new AnnotationTypeFilter(Webhooks.class));
+        scanner.addIncludeFilter(new AnnotationTypeFilter(Webhook.class));
+
+        if (AutoConfigurationPackages.has(context)) {
+            for (String basePackage : AutoConfigurationPackages.get(context)) {
+                Set<BeanDefinition> candidates = scanner.findCandidateComponents(basePackage);
+                for (BeanDefinition bd : candidates) {
+                    try {
+                        Class<?> clazz = Class.forName(bd.getBeanClassName());
+                        allWebhookClassesToScan.add(clazz);
+                    }
+                    catch (ClassNotFoundException e) {
+                        LOGGER.error("Class not found in classpath: {}", e.getMessage());
+                    }
+                }
+            }
+        }
+
+        return allWebhookClassesToScan.toArray(new Class<?>[0]);
+    }
+
+
+	/**
+	 * Collect webhooks from element.
+	 *
+	 * @param element   the element
+	 * @param collector the collector
+	 */
+	private void collectWebhooksFromElement(AnnotatedElement element, List<Webhooks> collector) {
+		// If @Webhooks is present (container)
+		Webhooks container = element.getAnnotation(Webhooks.class);
+		if (container != null) {
+			collector.add(container);
+		}
+
+		// If individual @Webhook annotations are present
+		Webhook[] individualWebhooks = element.getAnnotationsByType(Webhook.class);
+		if (individualWebhooks.length > 0) {
+			collector.add(new Webhooks() {
+				@Override
+				public Webhook[] value() {
+					return individualWebhooks;
+				}
+
+				@Override
+				public Class<? extends Annotation> annotationType() {
+					return Webhooks.class;
+				}
+			});
+		}
+	}
+
+
 	/**
 	 * Build open api with open api definition.
 	 *
@@ -543,12 +660,16 @@ public class OpenAPIService implements ApplicationContextAware {
 	 * @param locale  the locale
 	 */
 	private void buildOpenAPIWithOpenAPIDefinition(OpenAPI openAPI, OpenAPIDefinition apiDef, Locale locale) {
+		boolean isOpenapi3 = propertyResolverUtils.isOpenapi31();
 		// info
-		AnnotationsUtils.getInfo(apiDef.info(), propertyResolverUtils.isOpenapi31()).map(info -> resolveProperties(info, locale)).ifPresent(openAPI::setInfo);
+		AnnotationsUtils.getInfo(apiDef.info(), true).map(info -> {
+			Map<String, Object> extensions = AnnotationsUtils.getExtensions(isOpenapi3, apiDef.info().extensions());
+			return resolveProperties(info, extensions, locale);
+		}).ifPresent(openAPI::setInfo);
 		// OpenApiDefinition security requirements
 		securityParser.getSecurityRequirements(apiDef.security()).ifPresent(openAPI::setSecurity);
 		// OpenApiDefinition external docs
-		AnnotationsUtils.getExternalDocumentation(apiDef.externalDocs(), propertyResolverUtils.isOpenapi31()).ifPresent(openAPI::setExternalDocs);
+		AnnotationsUtils.getExternalDocumentation(apiDef.externalDocs(), isOpenapi3).ifPresent(openAPI::setExternalDocs);
 		// OpenApiDefinition tags
 		AnnotationsUtils.getTags(apiDef.tags(), false).ifPresent(tags -> openAPI.setTags(new ArrayList<>(tags)));
 		// OpenApiDefinition servers
@@ -560,7 +681,7 @@ public class OpenAPIService implements ApplicationContextAware {
 		);
 		// OpenApiDefinition extensions
 		if (apiDef.extensions().length > 0) {
-			openAPI.setExtensions(AnnotationsUtils.getExtensions(propertyResolverUtils.isOpenapi31(), apiDef.extensions()));
+			openAPI.setExtensions(AnnotationsUtils.getExtensions(isOpenapi3, apiDef.extensions()));
 		}
 	}
 
@@ -584,11 +705,12 @@ public class OpenAPIService implements ApplicationContextAware {
 	/**
 	 * Resolve properties info.
 	 *
-	 * @param info   the info
-	 * @param locale the locale
+	 * @param info       the info
+	 * @param extensions
+	 * @param locale     the locale
 	 * @return the info
 	 */
-	private Info resolveProperties(Info info, Locale locale) {
+	private Info resolveProperties(Info info, Map<String, Object> extensions, Locale locale) {
 		resolveProperty(info::getTitle, info::title, propertyResolverUtils, locale);
 		resolveProperty(info::getDescription, info::description, propertyResolverUtils, locale);
 		resolveProperty(info::getVersion, info::version, propertyResolverUtils, locale);
@@ -607,15 +729,18 @@ public class OpenAPIService implements ApplicationContextAware {
 			resolveProperty(contact::getUrl, contact::url, propertyResolverUtils, locale);
 		}
 
-		if(propertyResolverUtils.isResolveExtensionsProperties()){
-			Map<String, Object> extensionsResolved = propertyResolverUtils.resolveExtensions(locale, info.getExtensions());
-			info.setExtensions(extensionsResolved);			
+		if (extensions != null) {
+			Map<String, Object> extensionsResolved = propertyResolverUtils.resolveExtensions(locale, extensions);
+			if (propertyResolverUtils.isOpenapi31()){
+				extensionsResolved.forEach(info::addExtension31);
+				info.setExtensions(extensionsResolved);
+			}
+			else
+				info.setExtensions(extensionsResolved);
 		}
-		
+
 		return info;
 	}
-
-
 
 	/**
 	 * Resolve property.
@@ -799,7 +924,7 @@ public class OpenAPIService implements ApplicationContextAware {
 	/**
 	 * Gets cached open api.
 	 *
-	 * @param locale associated the the cache entry
+	 * @param locale associated the cache entry
 	 * @return the cached open api
 	 */
 	public OpenAPI getCachedOpenAPI(Locale locale) {
@@ -810,7 +935,7 @@ public class OpenAPIService implements ApplicationContextAware {
 	 * Sets cached open api.
 	 *
 	 * @param cachedOpenAPI the cached open api
-	 * @param locale        associated the the cache entry
+	 * @param locale        associated the cache entry
 	 */
 	public void setCachedOpenAPI(OpenAPI cachedOpenAPI, Locale locale) {
 		this.cachedOpenAPI.put(locale.toLanguageTag(), cachedOpenAPI);

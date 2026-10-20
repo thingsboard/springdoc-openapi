@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -23,6 +25,8 @@
  */
 
 package org.springdoc.ui;
+
+import java.util.Objects;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,6 +37,7 @@ import org.springdoc.core.properties.SwaggerUiConfigProperties;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import static org.springdoc.core.utils.Constants.SWAGGER_CONFIG_FILE;
 import static org.springdoc.core.utils.Constants.SWAGGER_UI_OAUTH_REDIRECT_URL;
 import static org.springdoc.core.utils.Constants.SWAGGER_UI_URL;
 import static org.springframework.util.AntPathMatcher.DEFAULT_PATH_SEPARATOR;
@@ -56,110 +61,135 @@ public abstract class AbstractSwaggerWelcome {
 	protected final SpringDocConfigProperties springDocConfigProperties;
 
 	/**
-	 * The Swagger ui calculated config.
-	 */
-	protected final SwaggerUiConfigParameters swaggerUiConfigParameters;
-
-	/**
-	 * The Swagger config url.
-	 */
-	protected String swaggerConfigUrl;
-
-	/**
-	 * The Api docs url.
-	 */
-	protected String apiDocsUrl;
-
-	/**
-	 * The Context path.
-	 */
-	protected String contextPath;
-
-	/**
 	 * Instantiates a new Abstract swagger welcome.
 	 *
-	 * @param swaggerUiConfig the swagger ui config
+	 * @param swaggerUiConfig           the swagger ui config
 	 * @param springDocConfigProperties the spring doc config properties
-	 * @param swaggerUiConfigParameters the swagger ui config parameters
 	 */
-	public AbstractSwaggerWelcome(SwaggerUiConfigProperties swaggerUiConfig, SpringDocConfigProperties springDocConfigProperties, SwaggerUiConfigParameters swaggerUiConfigParameters) {
+	protected AbstractSwaggerWelcome(SwaggerUiConfigProperties swaggerUiConfig, SpringDocConfigProperties springDocConfigProperties) {
 		this.swaggerUiConfig = swaggerUiConfig;
 		this.springDocConfigProperties = springDocConfigProperties;
-		this.swaggerUiConfigParameters = swaggerUiConfigParameters;
 	}
 
 	/**
 	 * Init.
+	 *
+	 * @param swaggerUiConfigParameters the swagger ui config parameters
 	 */
-	protected void init() {
+	protected void init(SwaggerUiConfigParameters swaggerUiConfigParameters) {
 		springDocConfigProperties.getGroupConfigs().forEach(groupConfig -> swaggerUiConfigParameters.addGroup(groupConfig.getGroup(), groupConfig.getDisplayName()));
-		calculateUiRootPath();
+		calculateUiRootPath(swaggerUiConfigParameters);
 	}
 
 	/**
 	 * Build url string.
 	 *
 	 * @param contextPath the context path
-	 * @param docsUrl the docs url
+	 * @param docsUrl     the docs url
 	 * @return the string
 	 */
 	protected String buildUrl(String contextPath, String docsUrl) {
 		if (contextPath.endsWith(DEFAULT_PATH_SEPARATOR)) {
-			return contextPath.substring(0, contextPath.length() - 1) + docsUrl;
+			contextPath = contextPath.substring(0, contextPath.length() - 1);
 		}
 		if (!docsUrl.startsWith(DEFAULT_PATH_SEPARATOR))
 			docsUrl = DEFAULT_PATH_SEPARATOR + docsUrl;
-		return contextPath + docsUrl;
+		// Avoid duplicating the servlet path prefix when the configured path already
+		// contains it (for example a servlet mapped at /api together with
+		// springdoc.api-docs.path=/api/v3/api-docs). See issue #3294.
+		String overlap = pathOverlap(contextPath, docsUrl);
+		return contextPath.substring(0, contextPath.length() - overlap.length()) + docsUrl;
+	}
+
+	/**
+	 * Returns the longest suffix of {@code contextPath} that also is a leading path
+	 * segment of {@code docsUrl} (matched on segment boundaries, so {@code /api} does not
+	 * overlap with {@code /api-docs}). This lets {@link #buildUrl(String, String)} collapse
+	 * a duplicated prefix such as the servlet path that is present both in the resolved
+	 * context path and in the configured docs path.
+	 *
+	 * @param contextPath the context path
+	 * @param docsUrl     the docs url
+	 * @return the overlapping suffix of the context path, or an empty string if none
+	 */
+	private String pathOverlap(String contextPath, String docsUrl) {
+		int index = contextPath.indexOf(DEFAULT_PATH_SEPARATOR);
+		while (index >= 0) {
+			String suffix = contextPath.substring(index);
+			if (docsUrl.equals(suffix) || docsUrl.startsWith(suffix + DEFAULT_PATH_SEPARATOR)) {
+				return suffix;
+			}
+			index = contextPath.indexOf(DEFAULT_PATH_SEPARATOR, index + 1);
+		}
+		return StringUtils.EMPTY;
 	}
 
 	/**
 	 * Build config url.
 	 *
-	 * @param uriComponentsBuilder the uri components builder
+	 * @param swaggerUiConfigParameters the swagger ui config parameters
+	 * @param uriComponentsBuilder      the uri components builder
 	 */
-	protected void buildConfigUrl(UriComponentsBuilder uriComponentsBuilder) {
+	protected void buildConfigUrl(SwaggerUiConfigParameters swaggerUiConfigParameters, UriComponentsBuilder uriComponentsBuilder) {
 		if (StringUtils.isEmpty(swaggerUiConfig.getConfigUrl())) {
-			apiDocsUrl = buildApiDocUrl();
-			swaggerConfigUrl = buildSwaggerConfigUrl();
-			swaggerUiConfigParameters.setConfigUrl(swaggerConfigUrl);
+			buildApiDocUrl(swaggerUiConfigParameters);
+			buildSwaggerConfigUrl(swaggerUiConfigParameters);
+			String swaggerUiUrl = swaggerUiConfig.getUrl();
 			if (CollectionUtils.isEmpty(swaggerUiConfigParameters.getUrls())) {
-				String swaggerUiUrl = swaggerUiConfig.getUrl();
 				if (StringUtils.isEmpty(swaggerUiUrl))
-					swaggerUiConfigParameters.setUrl(apiDocsUrl);
+					swaggerUiConfigParameters.setUrl(swaggerUiConfigParameters.getApiDocsUrl());
 				else if (swaggerUiConfigParameters.isValidUrl(swaggerUiUrl))
 					swaggerUiConfigParameters.setUrl(swaggerUiUrl);
 				else
-					swaggerUiConfigParameters.setUrl(buildUrlWithContextPath(swaggerUiUrl));
+					swaggerUiConfigParameters.setUrl(buildUrlWithContextPath(swaggerUiConfigParameters, swaggerUiUrl));
 			}
 			else
-				swaggerUiConfigParameters.addUrl(apiDocsUrl);
+				swaggerUiConfigParameters.addUrl(resolveGroupedApiDocsUrl(swaggerUiConfigParameters, swaggerUiUrl));
 			if (!CollectionUtils.isEmpty(swaggerUiConfig.getUrls())) {
-				swaggerUiConfig.cloneUrls().forEach(swaggerUrl -> {
-					swaggerUiConfigParameters.getUrls().remove(swaggerUrl);
-					if (!swaggerUiConfigParameters.isValidUrl(swaggerUrl.getUrl()))
-						swaggerUrl.setUrl(buildUrlWithContextPath(swaggerUrl.getUrl()));
-					swaggerUiConfigParameters.getUrls().add(swaggerUrl);
-				});
+				swaggerUiConfig.cloneUrls()
+						.stream()
+						.filter(swaggerUrl -> !swaggerUiConfigParameters.isValidUrl(swaggerUrl.getUrl()))
+						.forEach(swaggerUrl -> {
+							final var url = buildUrlWithContextPath(swaggerUiConfigParameters, swaggerUrl.getUrl());
+							if (!Objects.equals(url, swaggerUrl.getUrl())) {
+								swaggerUiConfigParameters.getUrls()
+										.stream()
+										.filter(swaggerUrl::equals)
+										.forEach(subUrl -> subUrl.setUrl(url));
+							}
+						});
 			}
 		}
-		calculateOauth2RedirectUrl(uriComponentsBuilder);
+		calculateOauth2RedirectUrl(swaggerUiConfigParameters, uriComponentsBuilder);
+	}
+
+	private String resolveGroupedApiDocsUrl(SwaggerUiConfigParameters swaggerUiConfigParameters, String swaggerUiUrl) {
+		if (StringUtils.isEmpty(swaggerUiUrl)) {
+			return swaggerUiConfigParameters.getApiDocsUrl();
+		}
+		if (swaggerUiConfigParameters.isValidUrl(swaggerUiUrl)) {
+			return swaggerUiUrl;
+		}
+		return buildUrlWithContextPath(swaggerUiConfigParameters, swaggerUiUrl);
 	}
 
 	/**
 	 * Build swagger ui url string.
 	 *
-	 * @param swaggerUiUrl the swagger ui url
+	 * @param swaggerUiConfigParameters the swagger ui config parameters
+	 * @param swaggerUiUrl              the swagger ui url
 	 * @return the string
 	 */
-	protected abstract String buildUrlWithContextPath(String swaggerUiUrl);
+	protected abstract String buildUrlWithContextPath(SwaggerUiConfigParameters swaggerUiConfigParameters, String swaggerUiUrl);
 
 	/**
 	 * Gets uri components builder.
 	 *
-	 * @param sbUrl the sb url
+	 * @param swaggerUiConfigParameters the swagger ui config parameters
+	 * @param sbUrl                     the sb url
 	 * @return the uri components builder
 	 */
-	protected UriComponentsBuilder getUriComponentsBuilder(String sbUrl) {
+	protected UriComponentsBuilder getUriComponentsBuilder(SwaggerUiConfigParameters swaggerUiConfigParameters, String sbUrl) {
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(sbUrl);
 		if ((swaggerUiConfig.getQueryConfigEnabled() != null && swaggerUiConfig.getQueryConfigEnabled())) {
 			swaggerUiConfigParameters.getConfigParameters().entrySet().stream()
@@ -177,24 +207,30 @@ public abstract class AbstractSwaggerWelcome {
 	/**
 	 * Calculate oauth 2 redirect url.
 	 *
-	 * @param uriComponentsBuilder the uri components builder
+	 * @param swaggerUiConfigParameters the swagger ui config parameters
+	 * @param uriComponentsBuilder      the uri components builder
 	 */
-	protected abstract void calculateOauth2RedirectUrl(UriComponentsBuilder uriComponentsBuilder);
+	protected abstract void calculateOauth2RedirectUrl(SwaggerUiConfigParameters swaggerUiConfigParameters, UriComponentsBuilder uriComponentsBuilder);
 
 	/**
 	 * Calculate ui root path.
 	 *
-	 * @param sbUrls the sb urls
+	 * @param swaggerUiConfigParameters the swagger ui config parameters
+	 * @param sbUrls                    the sb urls
 	 */
-	protected abstract void calculateUiRootPath(StringBuilder... sbUrls);
+	protected void calculateUiRootPath(SwaggerUiConfigParameters swaggerUiConfigParameters, StringBuilder... sbUrls) {
+		StringBuilder sbUrl = new StringBuilder();
+		calculateUiRootCommon(swaggerUiConfigParameters, sbUrl, sbUrls);
+	}
 
 	/**
 	 * Calculate ui root common.
 	 *
-	 * @param sbUrl the sb url
-	 * @param sbUrls the sb urls
+	 * @param swaggerUiConfigParameters the swagger ui config parameters
+	 * @param sbUrl                     the sb url
+	 * @param sbUrls                    the sb urls
 	 */
-	protected void calculateUiRootCommon(StringBuilder sbUrl, StringBuilder[] sbUrls) {
+	protected void calculateUiRootCommon(SwaggerUiConfigParameters swaggerUiConfigParameters, StringBuilder sbUrl, StringBuilder[] sbUrls) {
 		if (ArrayUtils.isNotEmpty(sbUrls))
 			sbUrl = sbUrls[0];
 		String swaggerPath = swaggerUiConfigParameters.getPath();
@@ -206,16 +242,20 @@ public abstract class AbstractSwaggerWelcome {
 	/**
 	 * Build api doc url string.
 	 *
-	 * @return the string
+	 * @param swaggerUiConfigParameters the swagger ui config parameters
 	 */
-	protected abstract String buildApiDocUrl();
+	protected void buildApiDocUrl(SwaggerUiConfigParameters swaggerUiConfigParameters) {
+		swaggerUiConfigParameters.setApiDocsUrl(buildUrlWithContextPath(swaggerUiConfigParameters, springDocConfigProperties.getApiDocs().getPath()));
+	}
 
 	/**
 	 * Build swagger config url string.
 	 *
-	 * @return the string
+	 * @param swaggerUiConfigParameters the swagger ui config parameters
 	 */
-	protected abstract String buildSwaggerConfigUrl();
+	protected void buildSwaggerConfigUrl(SwaggerUiConfigParameters swaggerUiConfigParameters) {
+		swaggerUiConfigParameters.setConfigUrl(swaggerUiConfigParameters.getApiDocsUrl() + DEFAULT_PATH_SEPARATOR + SWAGGER_CONFIG_FILE);
+	}
 
 	/**
 	 * Gets oauth2 redirect url.

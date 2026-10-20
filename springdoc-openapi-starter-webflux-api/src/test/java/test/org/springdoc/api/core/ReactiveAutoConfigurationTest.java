@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class ReactiveAutoConfigurationTest {
 			.withUserConfiguration(TestApp.class);
 
 	@Test
-	public void configurations_successfully_loaded() {
+	void configurations_successfully_loaded() {
 		contextRunner
 				.run(context -> assertThat(context)
 						.hasNotFailed()
@@ -41,7 +41,7 @@ public class ReactiveAutoConfigurationTest {
 	}
 
 	@Test
-	public void configurations_not_loaded_when_application_is_not_web() {
+	void configurations_not_loaded_when_application_is_not_web() {
 		new ApplicationContextRunner()
 				.withUserConfiguration(TestApp.class)
 				.run(context -> assertThat(context)
@@ -50,7 +50,7 @@ public class ReactiveAutoConfigurationTest {
 	}
 
 	@Test
-	public void configurations_not_loaded_when_disabled() {
+	void configurations_not_loaded_when_disabled() {
 		contextRunner
 				.withPropertyValues("springdoc.api-docs.enabled=false")
 				.run(context -> assertThat(context)
@@ -59,7 +59,7 @@ public class ReactiveAutoConfigurationTest {
 	}
 
 	@Test
-	public void configurations_not_loaded_when_reactor_is_not_on_class_path() {
+	void configurations_not_loaded_when_reactor_is_not_on_class_path() {
 		contextRunner
 				.withClassLoader(new FilteredClassLoader("org.springframework.web.reactive.HandlerResult"))
 				.run(context -> assertThat(context)

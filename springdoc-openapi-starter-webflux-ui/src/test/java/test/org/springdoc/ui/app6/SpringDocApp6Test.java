@@ -2,7 +2,7 @@
  *
  *  *
  *  *  *
- *  *  *  * Copyright 2019-2020 the original author or authors.
+ *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *
  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ import org.springframework.test.web.reactive.server.EntityExchangeResult;
 public class SpringDocApp6Test extends AbstractSpringDocTest {
 
 	@Test
-	public void transformed_index_with_oauth() throws Exception {
-		EntityExchangeResult<byte[]> getResult = webTestClient.get().uri("/webjars" + Constants.SWAGGER_INITIALIZER_URL)
+	void transformed_index_with_oauth() throws Exception {
+		EntityExchangeResult<byte[]> getResult = webTestClient.get().uri(Constants.SWAGGER_INITIALIZER_URL)
 				.exchange()
 				.expectStatus().isOk()
 				.expectBody().returnResult();

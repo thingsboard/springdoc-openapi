@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -25,18 +27,25 @@
 package org.springdoc.core.models;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
+import org.springdoc.core.versions.HeaderVersionStrategy;
+import org.springdoc.core.versions.MediaTypeVersionStrategy;
+import org.springdoc.core.versions.SpringDocVersionStrategy;
 
 import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,6 +54,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
  * The type Method attributes.
+ *
  * @author bnasslahsen
  */
 public class MethodAttributes {
@@ -125,12 +135,23 @@ public class MethodAttributes {
 	private String javadocReturn;
 
 	/**
+	 * The Use return type schema.
+	 */
+	private final Map<String, Boolean> useReturnTypeSchema = new LinkedHashMap<>();
+
+	/**
+	 * The Spring doc version strategy.
+	 */
+	private SpringDocVersionStrategy springDocVersionStrategy;
+
+	/**
 	 * Instantiates a new Method attributes.
-	 * @param methodProducesNew the method produces new
+	 *
+	 * @param methodProducesNew        the method produces new
 	 * @param defaultConsumesMediaType the default consumes media type
 	 * @param defaultProducesMediaType the default produces media type
-	 * @param genericMapResponse the generic map response
-	 * @param locale the locale
+	 * @param genericMapResponse       the generic map response
+	 * @param locale                   the locale
 	 */
 	public MethodAttributes(String[] methodProducesNew, String defaultConsumesMediaType, String defaultProducesMediaType, Map<String, ApiResponse> genericMapResponse, Locale locale) {
 		this.methodProduces = methodProducesNew;
@@ -142,9 +163,10 @@ public class MethodAttributes {
 
 	/**
 	 * Instantiates a new Method attributes.
+	 *
 	 * @param defaultConsumesMediaType the default consumes media type
 	 * @param defaultProducesMediaType the default produces media type
-	 * @param locale the locale
+	 * @param locale                   the locale
 	 */
 	public MethodAttributes(String defaultConsumesMediaType, String defaultProducesMediaType, Locale locale) {
 		this.defaultConsumesMediaType = defaultConsumesMediaType;
@@ -154,19 +176,23 @@ public class MethodAttributes {
 
 	/**
 	 * Instantiates a new Method attributes.
+	 *
 	 * @param defaultConsumesMediaType the default consumes media type
 	 * @param defaultProducesMediaType the default produces media type
-	 * @param methodConsumes the method consumes
-	 * @param methodProduces the method produces
-	 * @param headers the headers
-	 * @param locale the locale
+	 * @param methodConsumes           the method consumes
+	 * @param methodProduces           the method produces
+	 * @param headers                  the headers
+	 * @param springDocVersionStrategy the spring doc version strategy
+	 * @param locale                   the locale
 	 */
-	public MethodAttributes(String defaultConsumesMediaType, String defaultProducesMediaType, String[] methodConsumes, String[] methodProduces, String[] headers, Locale locale) {
+	public MethodAttributes(String defaultConsumesMediaType, String defaultProducesMediaType, String[] methodConsumes, String[] methodProduces, String[] headers,
+			SpringDocVersionStrategy springDocVersionStrategy, Locale locale) {
 		this.defaultConsumesMediaType = defaultConsumesMediaType;
 		this.defaultProducesMediaType = defaultProducesMediaType;
 		this.methodProduces = methodProduces;
 		this.methodConsumes = methodConsumes;
 		this.locale = locale;
+		this.springDocVersionStrategy = springDocVersionStrategy;
 		setHeaders(headers);
 	}
 
@@ -255,7 +281,11 @@ public class MethodAttributes {
 		RequestMapping reqMappingClass = AnnotatedElementUtils.findMergedAnnotation(method.getDeclaringClass(), RequestMapping.class);
 
 		if (reqMappingMethod != null && reqMappingClass != null) {
-			fillMethods(ArrayUtils.addAll(reqMappingMethod.produces(), reqMappingClass.produces()), ArrayUtils.addAll(reqMappingMethod.consumes(), reqMappingClass.consumes()), reqMappingMethod.headers());
+			fillMethods(
+					calculateMethodMediaTypes(reqMappingMethod.produces(), reqMappingClass.produces()),
+					calculateMethodMediaTypes(reqMappingMethod.consumes(), reqMappingClass.consumes()),
+					reqMappingMethod.headers()
+			);
 		}
 		else if (reqMappingMethod != null) {
 			fillMethods(reqMappingMethod.produces(), reqMappingMethod.consumes(), reqMappingMethod.headers());
@@ -272,29 +302,98 @@ public class MethodAttributes {
 	 *
 	 * @param produces the produces
 	 * @param consumes the consumes
-	 * @param headers the headers
+	 * @param headers  the headers
 	 */
 	private void fillMethods(String[] produces, String[] consumes, String[] headers) {
-		if (ArrayUtils.isEmpty(methodProduces)) {
-			if (ArrayUtils.isNotEmpty(produces))
-				methodProduces = produces;
-			else if (ArrayUtils.isNotEmpty(classProduces))
-				methodProduces = classProduces;
-			else
-				methodProduces = new String[] { defaultProducesMediaType };
+		if (ArrayUtils.isNotEmpty(produces)) {
+			methodProduces = mergeArrays(methodProduces, produces);
+			if (springDocVersionStrategy instanceof MediaTypeVersionStrategy mediaTypeVersionStrategy
+					&& mediaTypeVersionStrategy.getVersion() != null) {
+				methodProduces = mediaTypeVersionStrategy.buildProduces();
+			}
+		}
+		else if (ArrayUtils.isNotEmpty(classProduces)) {
+			methodProduces = mergeArrays(methodProduces, classProduces);
+		}
+		else if (ArrayUtils.isEmpty(methodProduces)) {
+			methodProduces = new String[] { defaultProducesMediaType };
 		}
 
-		if (ArrayUtils.isEmpty(methodConsumes)) {
-			if (ArrayUtils.isNotEmpty(consumes))
-				methodConsumes = consumes;
-			else if (ArrayUtils.isNotEmpty(classConsumes))
-				methodConsumes = classConsumes;
-			else
-				methodConsumes = new String[] { defaultConsumesMediaType };
+		if (ArrayUtils.isNotEmpty(consumes)) {
+			methodConsumes = mergeArrays(methodConsumes, consumes);
+		}
+		else if (ArrayUtils.isNotEmpty(classConsumes)) {
+			methodConsumes = mergeArrays(methodConsumes, classConsumes);
+		}
+		else if (ArrayUtils.isEmpty(methodConsumes)) {
+			methodConsumes = new String[] { defaultConsumesMediaType };
 		}
 
-		if (CollectionUtils.isEmpty(this.headers))
-			setHeaders(headers);
+		setHeaders(headers);
+	}
+
+	/**
+	 * If there is any method type(s) present, then these will override the class type(s).
+	 * See <a href="https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-requestmapping.html#mvc-ann-requestmapping-consumes">...</a> for details
+	 *
+	 * @param methodTypes the method types
+	 * @param classTypes  the class types
+	 * @return the string [ ] containing the types that can be used for the method
+	 */
+	private String[] calculateMethodMediaTypes(@Nullable String[] methodTypes, String[] classTypes) {
+		if (ArrayUtils.isNotEmpty(methodTypes)) {
+			return methodTypes;
+		}
+		return classTypes;
+	}
+
+	/**
+	 * Merge string arrays into one array with unique values
+	 *
+	 * @param array1 the array1
+	 * @param array2 the array2
+	 * @return the string [ ]
+	 */
+	private String[] mergeArrays(@Nullable String[] array1, String[] array2) {
+		Set<String> merged = array1 == null
+				? new LinkedHashSet<>()
+				: Arrays.stream(array1).collect(Collectors.toCollection(LinkedHashSet::new));
+
+		merged.addAll(Arrays.asList(array2));
+
+		// Apply dynamic version filtering if versionStrategy is active
+		if (springDocVersionStrategy != null
+				&& springDocVersionStrategy instanceof MediaTypeVersionStrategy mediaTypeVersionStrategy
+				&& mediaTypeVersionStrategy.getVersion() != null) {
+
+			// Remove unversioned media types if versioned variants exist
+			Set<String> baseTypesWithVersion = merged.stream()
+					.filter(mt -> mt.contains(";"))
+					.filter(this::containsVersionParameter)
+					.map(mt -> mt.split(";", 2)[0])
+					.collect(Collectors.toSet());
+
+			merged.removeIf(mt -> baseTypesWithVersion.contains(mt) && !mt.contains(";"));
+		}
+
+		return merged.toArray(new String[0]);
+	}
+
+	/**
+	 * Contains version parameter boolean.
+	 *
+	 * @param mediaType the media type
+	 * @return the boolean
+	 */
+	private boolean containsVersionParameter(String mediaType) {
+		String[] parts = mediaType.split(";");
+		for (int i = 1; i < parts.length; i++) {
+			String param = parts[i].trim().toLowerCase();
+			if (param.startsWith("version=") || param.startsWith("v=") || param.contains("version=")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -372,6 +471,15 @@ public class MethodAttributes {
 	}
 
 	/**
+	 * Is with response body schema doc boolean.
+	 *
+	 * @return the boolean
+	 */
+	public boolean isWithResponseBodySchemaDoc() {
+		return withResponseBodySchemaDoc;
+	}
+
+	/**
 	 * Gets headers.
 	 *
 	 * @return the headers
@@ -395,10 +503,14 @@ public class MethodAttributes {
 				}
 				else {
 					String[] keyValueHeader = header.split("!=");
-					if (!this.headers.containsKey(keyValueHeader[0]))
-						this.headers.put(keyValueHeader[0], StringUtils.EMPTY);
+					this.headers.putIfAbsent(keyValueHeader[0], StringUtils.EMPTY);
 				}
 			}
+
+		if (springDocVersionStrategy instanceof HeaderVersionStrategy headerVersionStrategy
+				&& headerVersionStrategy.getVersion() != null) {
+				this.headers.put(headerVersionStrategy.getHeaderName(), headerVersionStrategy.getVersion()); 
+		}
 	}
 
 	/**
@@ -424,15 +536,6 @@ public class MethodAttributes {
 	}
 
 	/**
-	 * Is with response body schema doc boolean.
-	 *
-	 * @return the boolean
-	 */
-	public boolean isWithResponseBodySchemaDoc() {
-		return withResponseBodySchemaDoc;
-	}
-
-	/**
 	 * Sets with response body schema doc.
 	 *
 	 * @param withResponseBodySchemaDoc the with response body schema doc
@@ -449,7 +552,7 @@ public class MethodAttributes {
 	public void calculateHeadersForClass(Class<?> declaringClass) {
 		RequestMapping reqMappingClass = AnnotatedElementUtils.findMergedAnnotation(declaringClass, RequestMapping.class);
 		if (reqMappingClass != null) {
-			fillMethods(reqMappingClass.produces(), reqMappingClass.consumes(), reqMappingClass.headers());
+			setHeaders(reqMappingClass.headers());
 		}
 	}
 
@@ -478,5 +581,33 @@ public class MethodAttributes {
 	 */
 	public Locale getLocale() {
 		return locale;
+	}
+
+	/**
+	 * Gets use return type schema.
+	 *
+	 * @return the use return type schema
+	 */
+	public Map<String, Boolean> getUseReturnTypeSchema() {
+		return useReturnTypeSchema;
+	}
+
+	/**
+	 * Put use return type schema.
+	 *
+	 * @param responseCode the response code
+	 * @param useReturnTypeSchema the use return type schema
+	 */
+	public void putUseReturnTypeSchema(String responseCode, boolean useReturnTypeSchema) {
+		this.useReturnTypeSchema.put(responseCode, useReturnTypeSchema);
+	}
+
+	/**
+	 * Gets spring doc version strategy.
+	 *
+	 * @return the spring doc version strategy
+	 */
+	public SpringDocVersionStrategy getSpringDocVersionStrategy() {
+		return springDocVersionStrategy;
 	}
 }

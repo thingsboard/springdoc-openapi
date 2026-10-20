@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -49,6 +51,7 @@ import static org.springdoc.core.utils.Constants.OPERATION_ATTRIBUTE;
 
 /**
  * The type Springdoc route builder.
+ *
  * @author bnasslahsen
  */
 public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
@@ -85,8 +88,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Get springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -100,7 +103,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Get springdoc route builder.
 	 *
-	 * @param handlerFunction the handler function
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -114,8 +117,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Get springdoc route builder.
 	 *
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -129,9 +132,9 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Get springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -145,7 +148,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Head springdoc route builder.
 	 *
-	 * @param handlerFunction the handler function
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -159,8 +162,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Head springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -174,8 +177,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Head springdoc route builder.
 	 *
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -189,9 +192,9 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Head springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -205,7 +208,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Post springdoc route builder.
 	 *
-	 * @param handlerFunction the handler function
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -219,8 +222,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Post springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -234,8 +237,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Post springdoc route builder.
 	 *
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -249,9 +252,9 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Post springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -265,7 +268,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Put springdoc route builder.
 	 *
-	 * @param handlerFunction the handler function
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -279,8 +282,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Put springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -294,8 +297,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Put springdoc route builder.
 	 *
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -309,9 +312,9 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Put springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -325,7 +328,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Patch springdoc route builder.
 	 *
-	 * @param handlerFunction the handler function
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -339,8 +342,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Patch springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -354,8 +357,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Patch springdoc route builder.
 	 *
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -369,9 +372,9 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Patch springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -385,7 +388,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Delete springdoc route builder.
 	 *
-	 * @param handlerFunction the handler function
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -399,8 +402,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Delete springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -414,8 +417,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Delete springdoc route builder.
 	 *
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -429,9 +432,9 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Delete springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -445,7 +448,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Options springdoc route builder.
 	 *
-	 * @param handlerFunction the handler function
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -459,8 +462,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Options springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -474,8 +477,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Options springdoc route builder.
 	 *
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -489,9 +492,9 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Options springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param predicate the predicate
-	 * @param handlerFunction the handler function
+	 * @param pattern            the pattern
+	 * @param predicate          the predicate
+	 * @param handlerFunction    the handler function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -504,7 +507,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Add springdoc route builder.
 	 *
-	 * @param routerFunction the router function
+	 * @param routerFunction     the router function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -518,8 +521,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Resources springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param location the location
+	 * @param pattern            the pattern
+	 * @param location           the location
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -533,7 +536,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Resources springdoc route builder.
 	 *
-	 * @param lookupFunction the lookup function
+	 * @param lookupFunction     the lookup function
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -547,14 +550,12 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Nest springdoc route builder.
 	 *
-	 * @param predicate the predicate
+	 * @param predicate              the predicate
 	 * @param routerFunctionSupplier the router function supplier
-	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
-	public SpringdocRouteBuilder nest(RequestPredicate predicate, Supplier<RouterFunction<ServerResponse>> routerFunctionSupplier, Consumer<Builder> operationsConsumer) {
-		Builder builder = getOperationBuilder(operationsConsumer);
-		this.delegate.nest(predicate, routerFunctionSupplier).withAttribute(OPERATION_ATTRIBUTE, builder);
+	public SpringdocRouteBuilder nest(RequestPredicate predicate, Supplier<RouterFunction<ServerResponse>> routerFunctionSupplier) {
+		this.delegate.nest(predicate, routerFunctionSupplier);
 		return this;
 	}
 
@@ -562,14 +563,12 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Nest springdoc route builder.
 	 *
-	 * @param predicate the predicate
-	 * @param builderConsumer the builder consumer
-	 * @param operationsConsumer the operations consumer
+	 * @param predicate          the predicate
+	 * @param builderConsumer    the builder consumer
 	 * @return the springdoc route builder
 	 */
-	public SpringdocRouteBuilder nest(RequestPredicate predicate, Consumer<RouterFunctions.Builder> builderConsumer, Consumer<Builder> operationsConsumer) {
-		Builder builder = getOperationBuilder(operationsConsumer);
-		this.delegate.nest(predicate, builderConsumer).withAttribute(OPERATION_ATTRIBUTE, builder);
+	public SpringdocRouteBuilder nest(RequestPredicate predicate, Consumer<RouterFunctions.Builder> builderConsumer) {
+		this.delegate.nest(predicate, builderConsumer);
 		return this;
 	}
 
@@ -577,9 +576,9 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Path springdoc route builder.
 	 *
-	 * @param pattern the pattern
+	 * @param pattern                the pattern
 	 * @param routerFunctionSupplier the router function supplier
-	 * @param operationsConsumer the operations consumer
+	 * @param operationsConsumer     the operations consumer
 	 * @return the springdoc route builder
 	 */
 	public SpringdocRouteBuilder path(String pattern, Supplier<RouterFunction<ServerResponse>> routerFunctionSupplier, Consumer<Builder> operationsConsumer) {
@@ -592,8 +591,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Path springdoc route builder.
 	 *
-	 * @param pattern the pattern
-	 * @param builderConsumer the builder consumer
+	 * @param pattern            the pattern
+	 * @param builderConsumer    the builder consumer
 	 * @param operationsConsumer the operations consumer
 	 * @return the springdoc route builder
 	 */
@@ -607,13 +606,11 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Filter springdoc route builder.
 	 *
-	 * @param filterFunction the filter function
-	 * @param operationsConsumer the operations consumer
+	 * @param filterFunction     the filter function
 	 * @return the springdoc route builder
 	 */
-	public SpringdocRouteBuilder filter(HandlerFilterFunction<ServerResponse, ServerResponse> filterFunction, Consumer<Builder> operationsConsumer) {
-		Builder builder = getOperationBuilder(operationsConsumer);
-		this.delegate.filter(filterFunction).withAttribute(OPERATION_ATTRIBUTE, builder);
+	public SpringdocRouteBuilder filter(HandlerFilterFunction<ServerResponse, ServerResponse> filterFunction) {
+		this.delegate.filter(filterFunction);
 		return this;
 	}
 
@@ -621,13 +618,11 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * Before springdoc route builder.
 	 *
-	 * @param requestProcessor the request processor
-	 * @param operationsConsumer the operations consumer
+	 * @param requestProcessor   the request processor
 	 * @return the springdoc route builder
 	 */
-	public SpringdocRouteBuilder before(UnaryOperator<ServerRequest> requestProcessor, Consumer<Builder> operationsConsumer) {
-		Builder builder = getOperationBuilder(operationsConsumer);
-		this.delegate.before(requestProcessor).withAttribute(OPERATION_ATTRIBUTE, builder);
+	public SpringdocRouteBuilder before(UnaryOperator<ServerRequest> requestProcessor) {
+		this.delegate.before(requestProcessor);
 		return this;
 	}
 
@@ -635,13 +630,11 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * After springdoc route builder.
 	 *
-	 * @param responseProcessor the response processor
-	 * @param operationsConsumer the operations consumer
+	 * @param responseProcessor  the response processor
 	 * @return the springdoc route builder
 	 */
-	public SpringdocRouteBuilder after(BiFunction<ServerRequest, ServerResponse, ServerResponse> responseProcessor, Consumer<Builder> operationsConsumer) {
-		Builder builder = getOperationBuilder(operationsConsumer);
-		this.delegate.after(responseProcessor).withAttribute(OPERATION_ATTRIBUTE, builder);
+	public SpringdocRouteBuilder after(BiFunction<ServerRequest, ServerResponse, ServerResponse> responseProcessor) {
+		this.delegate.after(responseProcessor);
 		return this;
 	}
 
@@ -649,7 +642,7 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * On error springdoc route builder.
 	 *
-	 * @param predicate the predicate
+	 * @param predicate        the predicate
 	 * @param responseProvider the response provider
 	 * @return the springdoc route builder
 	 */
@@ -662,8 +655,8 @@ public class SpringdocRouteBuilder extends AbstractSpringdocRouteBuilder {
 	/**
 	 * On error springdoc route builder.
 	 *
-	 * @param <T>    the type parameter
-	 * @param exceptionType the exception type
+	 * @param <T>              the type parameter
+	 * @param exceptionType    the exception type
 	 * @param responseProvider the response provider
 	 * @return the springdoc route builder
 	 */

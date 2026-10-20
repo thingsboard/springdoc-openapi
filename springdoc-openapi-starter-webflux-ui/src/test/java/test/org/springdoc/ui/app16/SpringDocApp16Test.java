@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -41,14 +41,14 @@ import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 		properties = { "management.endpoints.web.exposure.include=*",
 				"springdoc.use-management-port=true",
-				"management.server.port=9284",
+				"management.server.port=9295",
 				"management.server.base-path=/test",
 				"management.endpoints.web.base-path=/application" })
 class SpringDocApp16Test extends AbstractSpringDocActuatorTest {
 
 	@Test
 	void testIndex() {
-		EntityExchangeResult<byte[]> getResult = webTestClient.get().uri("/application/webjars/swagger-ui/index.html")
+		EntityExchangeResult<byte[]> getResult = webTestClient.get().uri("/application/swagger-ui/index.html")
 				.exchange()
 				.expectStatus().isOk()
 				.expectBody().returnResult();
@@ -58,14 +58,14 @@ class SpringDocApp16Test extends AbstractSpringDocActuatorTest {
 	}
 
 	@Test
-	public void testIndexActuator() {
+	void testIndexActuator() {
 		HttpStatusCode httpStatusMono = webClient.get().uri("/test/application/swagger-ui")
 				.exchangeToMono(clientResponse -> Mono.just(clientResponse.statusCode())).block();
 		assertThat(httpStatusMono).isEqualTo(HttpStatus.FOUND);
 	}
 
 	@Test
-	public void testIndexSwaggerConfig() throws Exception {
+	void testIndexSwaggerConfig() throws Exception {
 		String contentAsString = webClient.get().uri("/test/application/swagger-ui/swagger-config").retrieve()
 				.bodyToMono(String.class).block();
 		String expected = getContent("results/app16-1.json");

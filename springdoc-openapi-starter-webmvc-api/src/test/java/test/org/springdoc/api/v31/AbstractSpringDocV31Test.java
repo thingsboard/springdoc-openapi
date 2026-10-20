@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -28,25 +28,28 @@ import org.junit.jupiter.api.Test;
 import org.springdoc.core.utils.Constants;
 import test.org.springdoc.api.AbstractCommonTest;
 
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.hamcrest.Matchers.is;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+import static org.springdoc.core.utils.Constants.SPRINGDOC_CACHE_DISABLED;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@TestPropertySource(properties = { "springdoc.api-docs.version=openapi_3_1" })
+/**
+ * A common base for OpenAPI 3.1 tests which provides the necessary foundation for OpenAPI 3.1 tests,
+ * making the test setup cleaner and more consistent.
+ *
+ * @author zdary
+ */
+@TestPropertySource(properties = { SPRINGDOC_CACHE_DISABLED + "=true", "springdoc.api-docs.version=OPENAPI_3_1" })
 public abstract class AbstractSpringDocV31Test extends AbstractCommonTest {
 
-	public static String className;
-
 	@Test
-	public void testApp() throws Exception {
-		className = getClass().getSimpleName();
+	protected void testApp() throws Exception {
+		String className = getClass().getSimpleName();
 		String testNumber = className.replaceAll("[^0-9]", "");
 		MvcResult mockMvcResult = mockMvc.perform(get(Constants.DEFAULT_API_DOCS_URL)).andExpect(status().isOk())
 				.andExpect(jsonPath("$.openapi", is("3.1.0"))).andReturn();

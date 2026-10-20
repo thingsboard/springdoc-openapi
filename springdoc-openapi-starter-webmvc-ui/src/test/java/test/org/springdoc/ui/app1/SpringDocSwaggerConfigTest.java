@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -35,11 +35,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 		properties = { "spring.jackson.property-naming-strategy=UPPER_CAMEL_CASE", "springdoc.show-actuator=true",
 				"management.endpoints.web.base-path=/management",
-				"server.servlet.context-path=/demo/api", "management.server.port=9201", "management.server.base-path=/demo/api" })
+				"server.servlet.context-path=/demo/api", "management.server.port=9301", "management.server.base-path=/demo/api" })
 public class SpringDocSwaggerConfigTest extends AbstractSpringDocActuatorTest {
 
 	@Test
-	public void testIndexSwaggerConfig() throws Exception {
+	void testIndexSwaggerConfig() throws Exception {
 		mockMvc.perform(get("/demo/api/v3/api-docs/swagger-config").contextPath("/demo/api"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("validatorUrl", equalTo("")))

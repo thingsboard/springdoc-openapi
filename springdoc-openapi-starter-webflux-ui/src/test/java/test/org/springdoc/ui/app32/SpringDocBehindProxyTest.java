@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
  */
 
 package test.org.springdoc.ui.app32;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 import test.org.springdoc.ui.AbstractSpringDocTest;
@@ -36,15 +39,15 @@ public class SpringDocBehindProxyTest extends AbstractSpringDocTest {
 	private static final String X_FORWARD_PREFIX = "/path/prefix";
 
 	@Test
-	public void shouldServeSwaggerUIAtDefaultPath() {
-		webTestClient.get().uri("/webjars/swagger-ui/index.html").exchange()
+	void shouldServeSwaggerUIAtDefaultPath() {
+		webTestClient.get().uri("/swagger-ui/index.html").exchange()
 				.expectStatus().isOk();
 	}
 
 	@Test
-	public void shouldReturnCorrectInitializerJS() throws Exception {
+	void shouldReturnCorrectInitializerJS() throws Exception {
 		webTestClient
-				.get().uri("/webjars/swagger-ui/swagger-initializer.js")
+				.get().uri("/swagger-ui/swagger-initializer.js")
 				.header("X-Forwarded-Prefix", X_FORWARD_PREFIX)
 				.exchange()
 				.expectStatus().isOk()
@@ -56,7 +59,7 @@ public class SpringDocBehindProxyTest extends AbstractSpringDocTest {
 	}
 
 	@Test
-	public void shouldCalculateOauthRedirectBehindProxy() throws Exception {
+	void shouldCalculateOauthRedirectBehindProxy() throws Exception {
 		webTestClient
 				.get().uri("/v3/api-docs/swagger-config")
 				.header("X-Forwarded-Proto", "https")
@@ -64,11 +67,11 @@ public class SpringDocBehindProxyTest extends AbstractSpringDocTest {
 				.header("X-Forwarded-Prefix", X_FORWARD_PREFIX)
 				.exchange()
 				.expectStatus().isOk().expectBody()
-				.jsonPath("$.oauth2RedirectUrl").isEqualTo("https://proxy-host/path/prefix/webjars/swagger-ui/oauth2-redirect.html");
+				.jsonPath("$.oauth2RedirectUrl").isEqualTo("https://proxy-host/path/prefix/swagger-ui/oauth2-redirect.html");
 	}
 
 	@Test
-	public void shouldCalculateUrlsBehindProxy() throws Exception {
+	void shouldCalculateUrlsBehindProxy() throws Exception {
 		webTestClient
 				.get().uri("/v3/api-docs/swagger-config")
 				.header("X-Forwarded-Prefix", X_FORWARD_PREFIX)
@@ -79,6 +82,48 @@ public class SpringDocBehindProxyTest extends AbstractSpringDocTest {
 				.jsonPath("$.configUrl")
 				.isEqualTo("/path/prefix/v3/api-docs/swagger-config");
 	}
+
+	@Test
+	void shouldReturnCorrectInitializerJSWhenChangingForwardedPrefixHeader() throws Exception {
+		var tasks = IntStream.range(0, 10).mapToObj(i -> CompletableFuture.runAsync(() -> {
+			try {
+				webTestClient.get().uri("/swagger-ui/swagger-initializer.js")
+						.header("X-Forwarded-Prefix", "/path/prefix" + i)
+						.exchange()
+						.expectStatus().isOk()
+						.expectBody(String.class)
+						.consumeWith(response ->
+								assertThat(response.getResponseBody())
+										.contains("\"configUrl\" : \"/path/prefix" + i + "/v3/api-docs/swagger-config\",")
+						);
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		})).toArray(CompletableFuture<?>[]::new);
+
+		CompletableFuture.allOf(tasks).join();
+	}
+
+	@Test
+	void shouldCalculateUrlsBehindProxyWhenChangingForwardedPrefixHeader() {
+		var tasks = IntStream.range(0, 10).mapToObj(i -> CompletableFuture.runAsync(() -> {
+			try {
+				webTestClient.get().uri("/v3/api-docs/swagger-config")
+						.header("X-Forwarded-Prefix", "/path/prefix" + i)
+						.exchange()
+						.expectStatus().isOk().expectBody()
+						.jsonPath("$.url").isEqualTo("/path/prefix" + i + "/v3/api-docs")
+						.jsonPath("$.configUrl").isEqualTo("/path/prefix" + i + "/v3/api-docs/swagger-config");
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		})).toArray(CompletableFuture<?>[]::new);
+
+		CompletableFuture.allOf(tasks).join();
+	}
+
 
 	@SpringBootApplication
 	static class SpringDocTestApp {}

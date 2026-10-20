@@ -1,0 +1,86 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "hello-controller",
+      "description": "The type Hello controller."
+    }
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "tags": [
+          "hello-controller"
+        ],
+        "summary": "Update action result.",
+        "description": "Update action result.",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "toto",
+            "in": "query",
+            "description": "the toto",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the action result",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResultVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActionResultVoid": {
+        "type": "object",
+        "description": "The type Action result.",
+        "properties": {
+          "value": {
+            "description": "The Value."
+          },
+          "success": {
+            "type": "boolean",
+            "description": "The Success."
+          },
+          "errorCode": {
+            "type": "string",
+            "description": "The Error code."
+          },
+          "message": {
+            "type": "string",
+            "description": "The Message."
+          },
+          "errorValue": {
+            "description": "The Error value."
+          },
+          "targetUrl": {
+            "type": "string",
+            "description": "The Target url."
+          }
+        }
+      }
+    }
+  }
+}

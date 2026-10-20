@@ -2,19 +2,23 @@
  *
  *  *
  *  *  *
- *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *
- *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
+ *  *  *  *  *
  *  *  *  *
- *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *
- *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  * See the License for the specific language governing permissions and
- *  *  *  * limitations under the License.
  *  *  *
  *  *
  *
@@ -23,7 +27,6 @@
 package org.springdoc.core.customizers;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -50,7 +53,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springdoc.core.extractor.DelegatingMethodParameter;
 import org.springdoc.core.providers.RepositoryRestConfigurationProvider;
 import org.springdoc.core.providers.SpringDataWebPropertiesProvider;
 
@@ -62,6 +64,9 @@ import org.springframework.data.web.SortDefault;
 
 /**
  * The type Data rest delegating method parameter customizer.
+ *
+ * @author bnasslahsen
+ * @author pheyken
  */
 public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMethodParameterCustomizer {
 
@@ -86,7 +91,7 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 	/**
 	 * Instantiates a new Data rest delegating method parameter customizer.
 	 *
-	 * @param optionalSpringDataWebPropertiesProvider the optional spring data web properties provider
+	 * @param optionalSpringDataWebPropertiesProvider     the optional spring data web properties provider
 	 * @param optionalRepositoryRestConfigurationProvider the optional repository rest configuration provider
 	 */
 	public DataRestDelegatingMethodParameterCustomizer(Optional<SpringDataWebPropertiesProvider> optionalSpringDataWebPropertiesProvider, Optional<RepositoryRestConfigurationProvider> optionalRepositoryRestConfigurationProvider) {
@@ -103,9 +108,8 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 				(Pageable.class.isAssignableFrom(parameterType) || Sort.class.isAssignableFrom(parameterType))
 						&& (isSpringDataWebPropertiesPresent() || isRepositoryRestConfigurationPresent())
 		)) {
-			Field field = FieldUtils.getDeclaredField(DelegatingMethodParameter.class, "additionalParameterAnnotations", true);
 			try {
-				Annotation[] parameterAnnotations = (Annotation[]) field.get(methodParameter);
+				Annotation[] parameterAnnotations = (Annotation[]) FieldUtils.readDeclaredField(methodParameter, "additionalParameterAnnotations", true);
 				if (ArrayUtils.isNotEmpty(parameterAnnotations))
 					for (int i = 0; i < parameterAnnotations.length; i++) {
 						if (Parameter.class.equals(parameterAnnotations[i].annotationType())) {
@@ -126,15 +130,14 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 	 *
 	 * @param methodParameter the method parameter
 	 * @param pageableDefault the pageable default
+	 * @param sortDefault     the sort default
 	 * @return the new parameter annotation for field
 	 */
 	private Optional<Annotation> getNewParameterAnnotationForField(MethodParameter methodParameter, PageableDefault pageableDefault, SortDefault sortDefault) {
 		String parameterName = methodParameter.getParameterName();
-		Field field;
 		Parameter parameterNew;
 		try {
-			field = methodParameter.getContainingClass().getDeclaredField(parameterName);
-			Parameter parameter = field.getAnnotation(Parameter.class);
+			Parameter parameter = methodParameter.getContainingClass().getDeclaredField(parameterName).getAnnotation(Parameter.class);
 			parameterNew = new Parameter() {
 				@Override
 				public Class<? extends Annotation> annotationType() {
@@ -189,8 +192,12 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 				@Override
 				public Schema schema() {
 					return new Schema() {
-
 						private Schema parameterSchema = parameter.schema();
+
+						@Override
+						public SchemaResolution schemaResolution() {
+							return parameterSchema.schemaResolution();
+						}
 
 						@Override
 						public Class<? extends Annotation> annotationType() {
@@ -440,6 +447,11 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 						@Override
 						public String $dynamicAnchor() {
 							return parameterSchema.$dynamicAnchor();
+						}
+
+						@Override
+						public String $dynamicRef() {
+							return parameterSchema.$dynamicRef();
 						}
 
 						@Override
@@ -746,7 +758,6 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 								@Override
 								public String defaultValue() {
 									return getArrayDefaultValue(parameterName, pageableDefault, sortDefault, schema.defaultValue());
-
 								}
 
 								@Override
@@ -827,6 +838,11 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 								@Override
 								public String $dynamicAnchor() {
 									return schema.$dynamicAnchor();
+								}
+
+								@Override
+								public String $dynamicRef() {
+									return schema.$dynamicRef();
 								}
 
 								@Override
@@ -938,6 +954,11 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 								public String _const() {
 									return schema._const();
 								}
+
+								@Override
+								public SchemaResolution schemaResolution() {
+									return schema.schemaResolution();
+								}
 							};
 						}
 
@@ -1017,6 +1038,11 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 				public String ref() {
 					return parameter.ref();
 				}
+
+				@Override
+				public Class<?>[] validationGroups() {
+					return new Class[0];
+				}
 			};
 			return Optional.of(parameterNew);
 		}
@@ -1030,7 +1056,7 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 	 * Gets name.
 	 *
 	 * @param parameterName the parameter name
-	 * @param originalName the original name
+	 * @param originalName  the original name
 	 * @return the name
 	 */
 	private String getName(String parameterName, String originalName) {
@@ -1062,8 +1088,7 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 				else
 					name = originalName;
 				break;
-			case "direction":
-			case "caseSensitive":
+			case "direction", "caseSensitive":
 				name = originalName;
 				break;
 			default:
@@ -1076,7 +1101,7 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 	/**
 	 * Gets description.
 	 *
-	 * @param parameterName the parameter name
+	 * @param parameterName       the parameter name
 	 * @param originalDescription the original description
 	 * @return the description
 	 */
@@ -1090,8 +1115,8 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 	/**
 	 * Gets default value.
 	 *
-	 * @param parameterName the parameter name
-	 * @param pageableDefault the pageable default
+	 * @param parameterName    the parameter name
+	 * @param pageableDefault  the pageable default
 	 * @param defaultSchemaVal the default schema val
 	 * @return the default value
 	 */
@@ -1123,8 +1148,14 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 					defaultValue = defaultSchemaVal;
 				break;
 			case "page":
-				if (pageableDefault != null)
-					defaultValue = String.valueOf(pageableDefault.page());
+				if (pageableDefault != null) {
+					if (isSpringDataWebPropertiesPresent() && optionalSpringDataWebPropertiesProvider.get().getSpringDataWebProperties().getPageable().isOneIndexedParameters()) {
+						defaultValue = String.valueOf(pageableDefault.page() + 1);
+					}
+					else {
+						defaultValue = String.valueOf(pageableDefault.page());
+					}
+				}
 				else if (isSpringDataWebPropertiesPresent() && optionalSpringDataWebPropertiesProvider.get().getSpringDataWebProperties().getPageable().isOneIndexedParameters())
 					defaultValue = "1";
 				else
@@ -1140,9 +1171,9 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 	/**
 	 * Gets default value.
 	 *
-	 * @param parameterName the parameter name
-	 * @param pageableDefault the pageable default
-	 * @param sortDefault the sort default
+	 * @param parameterName    the parameter name
+	 * @param pageableDefault  the pageable default
+	 * @param sortDefault      the sort default
 	 * @param defaultSchemaVal the default schema val
 	 * @return the default value
 	 */
@@ -1167,7 +1198,7 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 	 * Gets default sort.
 	 *
 	 * @param pageableDefault the pageable default
-	 * @param sortDefault the sort default
+	 * @param sortDefault     the sort default
 	 * @return the default sort
 	 */
 	private DefaultSort getDefaultSort(PageableDefault pageableDefault, SortDefault sortDefault) {
@@ -1222,23 +1253,52 @@ public class DataRestDelegatingMethodParameterCustomizer implements DelegatingMe
 		return optionalRepositoryRestConfigurationProvider.isPresent() && optionalRepositoryRestConfigurationProvider.get().isRepositoryRestConfigurationPresent();
 	}
 
+	/**
+	 * The type Default sort.
+	 */
 	private static class DefaultSort {
 
+		/**
+		 * The constant DIRECTION_GROUP.
+		 */
 		private static final String DIRECTION_GROUP = Arrays.stream(Sort.Direction.values()).map(Enum::name).collect(Collectors.joining("|"));
 
+		/**
+		 * The constant DIRECTED_REGEXP.
+		 */
 		private static final String DIRECTED_REGEXP = "\\w+(\\.\\w+)*,\\s*(" + DIRECTION_GROUP + ')';
 
+		/**
+		 * The constant DIRECTED_PATTERN.
+		 */
 		private static final Pattern DIRECTED_PATTERN = Pattern.compile(DIRECTED_REGEXP, Pattern.CASE_INSENSITIVE);
 
+		/**
+		 * The Direction.
+		 */
 		private final Sort.Direction direction;
 
+		/**
+		 * The Properties.
+		 */
 		private final String[] properties;
 
+		/**
+		 * Instantiates a new Default sort.
+		 *
+		 * @param direction  the direction
+		 * @param properties the properties
+		 */
 		DefaultSort(Sort.Direction direction, String... properties) {
 			this.direction = direction;
 			this.properties = properties;
 		}
 
+		/**
+		 * Gets effective properties.
+		 *
+		 * @return the effective properties
+		 */
 		List<String> getEffectiveProperties() {
 			return Arrays.stream(properties)
 					.map(p -> {

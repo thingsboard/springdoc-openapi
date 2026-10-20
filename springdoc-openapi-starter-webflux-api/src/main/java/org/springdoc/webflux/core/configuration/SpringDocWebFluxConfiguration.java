@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -24,15 +26,17 @@
 
 package org.springdoc.webflux.core.configuration;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.springdoc.core.configuration.SpringDocConfiguration;
-import org.springdoc.core.customizers.ParameterCustomizer;
+import org.springdoc.core.configuration.SpringDocWebServerConfiguration;
 import org.springdoc.core.customizers.SpringDocCustomizers;
 import org.springdoc.core.discoverer.SpringDocParameterNameDiscoverer;
-import org.springdoc.core.parsers.ReturnTypeParser;
+import org.springdoc.core.extractor.MethodParameterPojoExtractor;
 import org.springdoc.core.properties.SpringDocConfigProperties;
+import org.springdoc.core.properties.SwaggerUiConfigProperties;
 import org.springdoc.core.providers.ActuatorProvider;
 import org.springdoc.core.providers.SpringDocProviders;
 import org.springdoc.core.providers.SpringWebProvider;
@@ -42,30 +46,34 @@ import org.springdoc.core.service.GenericResponseService;
 import org.springdoc.core.service.OpenAPIService;
 import org.springdoc.core.service.OperationService;
 import org.springdoc.core.service.RequestBodyService;
+import org.springdoc.core.utils.Constants;
 import org.springdoc.core.utils.PropertyResolverUtils;
 import org.springdoc.webflux.api.OpenApiActuatorResource;
 import org.springdoc.webflux.api.OpenApiWebfluxResource;
+import org.springdoc.webflux.api.SpringDocApiVersionStrategy;
 import org.springdoc.webflux.core.providers.ActuatorWebFluxProvider;
 import org.springdoc.webflux.core.providers.SpringWebFluxProvider;
 import org.springdoc.webflux.core.service.RequestService;
 
 import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointProperties;
 import org.springframework.boot.actuate.autoconfigure.web.server.ConditionalOnManagementPort;
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementPortType;
 import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
-import org.springframework.boot.actuate.endpoint.web.reactive.ControllerEndpointHandlerMapping;
-import org.springframework.boot.actuate.endpoint.web.reactive.WebFluxEndpointHandlerMapping;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.boot.webflux.actuate.endpoint.web.WebFluxEndpointHandlerMapping;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.web.reactive.accept.ApiVersionStrategy;
+import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping;
 
 import static org.springdoc.core.utils.Constants.SPRINGDOC_ENABLED;
 
@@ -76,6 +84,7 @@ import static org.springdoc.core.utils.Constants.SPRINGDOC_ENABLED;
  */
 @Lazy(false)
 @Configuration(proxyBeanMethods = false)
+@AutoConfigureAfter(SpringDocConfiguration.class)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 @ConditionalOnProperty(name = SPRINGDOC_ENABLED, matchIfMissing = true)
 @ConditionalOnBean(SpringDocConfiguration.class)
@@ -85,12 +94,12 @@ public class SpringDocWebFluxConfiguration {
 	 * Open api resource open api resource.
 	 *
 	 * @param openAPIBuilderObjectFactory the open api builder object factory
-	 * @param requestBuilder the request builder
-	 * @param responseBuilder the response builder
-	 * @param operationParser the operation parser
-	 * @param springDocConfigProperties the spring doc config properties
-	 * @param springDocProviders the spring doc providers
-	 * @param springDocCustomizers the spring doc customizers
+	 * @param requestBuilder              the request builder
+	 * @param responseBuilder             the response builder
+	 * @param operationParser             the operation parser
+	 * @param springDocConfigProperties   the spring doc config properties
+	 * @param springDocProviders          the spring doc providers
+	 * @param springDocCustomizers        the spring doc customizers
 	 * @return the open api resource
 	 */
 	@Bean
@@ -108,50 +117,83 @@ public class SpringDocWebFluxConfiguration {
 	/**
 	 * Request builder request builder.
 	 *
-	 * @param parameterBuilder the parameter builder
-	 * @param requestBodyService the request body builder
-	 * @param operationService the operation builder
-	 * @param parameterCustomizers the parameter customizers
+	 * @param parameterBuilder                      the parameter builder
+	 * @param requestBodyService                    the request body builder
+	 * @param customizers                           the customizers
 	 * @param localSpringDocParameterNameDiscoverer the local spring doc parameter name discoverer
+	 * @param methodParameterPojoExtractor          the method parameter pojo extractor
 	 * @return the request builder
 	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@Lazy(false)
 	RequestService requestBuilder(GenericParameterService parameterBuilder, RequestBodyService requestBodyService,
-			OperationService operationService,
-			Optional<List<ParameterCustomizer>> parameterCustomizers,
-			SpringDocParameterNameDiscoverer localSpringDocParameterNameDiscoverer) {
+			SpringDocCustomizers customizers,
+			SpringDocParameterNameDiscoverer localSpringDocParameterNameDiscoverer,
+			MethodParameterPojoExtractor methodParameterPojoExtractor) {
 		return new RequestService(parameterBuilder, requestBodyService,
-				operationService, parameterCustomizers, localSpringDocParameterNameDiscoverer);
+				customizers, localSpringDocParameterNameDiscoverer,methodParameterPojoExtractor);
 	}
 
 	/**
 	 * Response builder generic response builder.
 	 *
-	 * @param operationService the operation builder
-	 * @param returnTypeParsers the return type parsers
+	 * @param operationService          the operation builder
 	 * @param springDocConfigProperties the spring doc config properties
-	 * @param propertyResolverUtils the property resolver utils
+	 * @param propertyResolverUtils     the property resolver utils
 	 * @return the generic response builder
 	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@Lazy(false)
-	GenericResponseService responseBuilder(OperationService operationService, List<ReturnTypeParser> returnTypeParsers, SpringDocConfigProperties springDocConfigProperties, PropertyResolverUtils propertyResolverUtils) {
-		return new GenericResponseService(operationService, returnTypeParsers, springDocConfigProperties, propertyResolverUtils);
+	GenericResponseService responseBuilder(OperationService operationService, SpringDocConfigProperties springDocConfigProperties, PropertyResolverUtils propertyResolverUtils) {
+		return new GenericResponseService(operationService, springDocConfigProperties, propertyResolverUtils);
 	}
 
 	/**
 	 * Spring web provider spring web provider.
 	 *
+	 * @param apiVersionStrategyOptional the api version strategy optional
 	 * @return the spring web provider
 	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@Lazy(false)
-	SpringWebProvider springWebProvider() {
-		return new SpringWebFluxProvider();
+	SpringWebProvider springWebProvider(Optional<ApiVersionStrategy> apiVersionStrategyOptional) {
+		return new SpringWebFluxProvider(apiVersionStrategyOptional);
+	}
+
+	/**
+	 * Wraps the {@link ApiVersionStrategy} on all {@link RequestMappingHandlerMapping} beans
+	 * to gracefully handle springdoc endpoint paths during API version resolution.
+	 *
+	 * @param apiVersionStrategyOptional        the api version strategy optional
+	 * @param springDocConfigProperties         the spring doc config properties
+	 * @param swaggerUiConfigPropertiesOptional the swagger ui config properties optional
+	 * @param handlerMappings                   the request mapping handler mappings
+	 * @return the smart initializing singleton
+	 */
+	@Bean
+	@Lazy(false)
+	SmartInitializingSingleton springDocApiVersionCustomizer(
+			Optional<ApiVersionStrategy> apiVersionStrategyOptional,
+			SpringDocConfigProperties springDocConfigProperties,
+			Optional<SwaggerUiConfigProperties> swaggerUiConfigPropertiesOptional,
+			List<RequestMappingHandlerMapping> handlerMappings) {
+		return () -> apiVersionStrategyOptional.ifPresent(strategy -> {
+			List<String> springDocPaths = new ArrayList<>();
+			springDocPaths.add(springDocConfigProperties.getApiDocs().getPath());
+			swaggerUiConfigPropertiesOptional.ifPresent(swaggerUiConfig -> {
+				springDocPaths.add(swaggerUiConfig.getPath());
+				springDocPaths.add(Constants.SWAGGER_UI_PREFIX);
+			});
+			for (RequestMappingHandlerMapping mapping : handlerMappings) {
+				ApiVersionStrategy original = mapping.getApiVersionStrategy();
+				if (original != null) {
+					mapping.setApiVersionStrategy(new SpringDocApiVersionStrategy(original, springDocPaths));
+				}
+			}
+		});
 	}
 
 	/**
@@ -165,41 +207,36 @@ public class SpringDocWebFluxConfiguration {
 		/**
 		 * Actuator provider actuator provider.
 		 *
-		 * @param serverProperties the server properties
-		 * @param springDocConfigProperties the spring doc config properties
+		 * @param springDocWebServerContext  the server context
+		 * @param springDocConfigProperties  the spring doc config properties
 		 * @param managementServerProperties the management server properties
-		 * @param webEndpointProperties the web endpoint properties
-		 * @param webFluxEndpointHandlerMapping the web flux endpoint handler mapping
-		 * @param controllerEndpointHandlerMapping the controller endpoint handler mapping
+		 * @param webEndpointProperties      the web endpoint properties
 		 * @return the actuator provider
 		 */
 		@Bean
 		@ConditionalOnMissingBean
 		@ConditionalOnExpression("${springdoc.show-actuator:false} or ${springdoc.use-management-port:false}")
 		@Lazy(false)
-		ActuatorProvider actuatorProvider(ServerProperties serverProperties,
+		ActuatorProvider actuatorProvider(SpringDocWebServerConfiguration.SpringDocWebServerContext springDocWebServerContext,
 				SpringDocConfigProperties springDocConfigProperties,
 				Optional<ManagementServerProperties> managementServerProperties,
-				Optional<WebEndpointProperties> webEndpointProperties,
-				Optional<WebFluxEndpointHandlerMapping> webFluxEndpointHandlerMapping,
-				Optional<ControllerEndpointHandlerMapping> controllerEndpointHandlerMapping) {
-			return new ActuatorWebFluxProvider(serverProperties,
+				Optional<WebEndpointProperties> webEndpointProperties) {
+			return new ActuatorWebFluxProvider(springDocWebServerContext,
 					springDocConfigProperties,
 					managementServerProperties,
-					webEndpointProperties,
-					webFluxEndpointHandlerMapping,
-					controllerEndpointHandlerMapping);
+					webEndpointProperties);
 		}
 
 		/**
 		 * Actuator open api resource open api actuator resource.
 		 *
 		 * @param openAPIBuilderObjectFactory the open api builder object factory
-		 * @param requestBuilder the request builder
-		 * @param responseBuilder the response builder
-		 * @param operationParser the operation parser
-		 * @param springDocConfigProperties the spring doc config properties
-		 * @param springDocProviders the spring doc providers
+		 * @param requestBuilder              the request builder
+		 * @param responseBuilder             the response builder
+		 * @param operationParser             the operation parser
+		 * @param springDocConfigProperties   the spring doc config properties
+		 * @param springDocProviders          the spring doc providers
+		 * @param springDocCustomizers        the spring doc customizers
 		 * @return the open api actuator resource
 		 */
 		@Bean

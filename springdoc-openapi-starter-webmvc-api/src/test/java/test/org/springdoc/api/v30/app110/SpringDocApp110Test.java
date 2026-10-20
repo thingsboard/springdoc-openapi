@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -43,13 +43,13 @@ public class SpringDocApp110Test extends AbstractSpringDocV30Test {
 	static class SpringDocTestApp {
 
 		@Bean
-		public OpenAPI customOpenAPI(@Value("${application-description}") String appDesciption, @Value("${application-version}") String appVersion) {
+		public OpenAPI customOpenAPI(@Value("${application-description}") String appDescription, @Value("${application-version}") String appVersion) {
 
 			return new OpenAPI()
 					.info(new Info()
 							.title("sample application API")
 							.version(appVersion)
-							.description(appDesciption)
+							.description(appDescription)
 							.termsOfService("http://swagger.io/terms/")
 							.license(new License().name("Apache 2.0").url("http://springdoc.org")));
 		}

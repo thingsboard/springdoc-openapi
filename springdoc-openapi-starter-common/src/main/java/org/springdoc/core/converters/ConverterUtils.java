@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -24,12 +26,10 @@
 
 package org.springdoc.core.converters;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
@@ -44,22 +44,22 @@ public class ConverterUtils {
 	/**
 	 * The constant RESULT_WRAPPERS_TO_IGNORE.
 	 */
-	private static final List<Class<?>> RESULT_WRAPPERS_TO_IGNORE = Collections.synchronizedList(new ArrayList<>());
+	private static final List<Class<?>> RESULT_WRAPPERS_TO_IGNORE = new CopyOnWriteArrayList<>();
 
 	/**
 	 * The constant RESPONSE_TYPES_TO_IGNORE.
 	 */
-	private static final List<Class<?>> RESPONSE_TYPES_TO_IGNORE = Collections.synchronizedList(new ArrayList<>());
+	private static final List<Class<?>> RESPONSE_TYPES_TO_IGNORE = new CopyOnWriteArrayList<>();
 
 	/**
 	 * The constant FLUX_WRAPPERS_TO_IGNORE.
 	 */
-	private static final List<Class<?>> FLUX_WRAPPERS_TO_IGNORE = Collections.synchronizedList(new ArrayList<>());
+	private static final List<Class<?>> FLUX_WRAPPERS_TO_IGNORE = new CopyOnWriteArrayList<>();
 
 	/**
 	 * The constant JAVA_TYPE_TO_IGNORE.
 	 */
-	private static final List<Class<?>> JAVA_TYPE_TO_IGNORE = Collections.synchronizedList(new ArrayList<>());
+	private static final List<Class<?>> JAVA_TYPE_TO_IGNORE = new CopyOnWriteArrayList<>();
 
 	static {
 		RESULT_WRAPPERS_TO_IGNORE.add(Callable.class);
@@ -99,7 +99,11 @@ public class ConverterUtils {
 	 * @return the boolean
 	 */
 	public static boolean isResponseTypeWrapper(Class<?> rawClass) {
-		return RESULT_WRAPPERS_TO_IGNORE.stream().anyMatch(clazz -> clazz.isAssignableFrom(rawClass));
+		for (Class<?> clazz : RESULT_WRAPPERS_TO_IGNORE) {
+			if (clazz.isAssignableFrom(rawClass))
+				return true;
+		}
+		return false;
 	}
 
 	/**
@@ -109,7 +113,11 @@ public class ConverterUtils {
 	 * @return the boolean
 	 */
 	public static boolean isResponseTypeToIgnore(Class<?> rawClass) {
-		return RESPONSE_TYPES_TO_IGNORE.stream().anyMatch(clazz -> clazz.isAssignableFrom(rawClass));
+		for (Class<?> clazz : RESPONSE_TYPES_TO_IGNORE) {
+			if (clazz.isAssignableFrom(rawClass))
+				return true;
+		}
+		return false;
 	}
 
 	/**
@@ -118,9 +126,7 @@ public class ConverterUtils {
 	 * @param classes the classes
 	 */
 	public static void removeResponseWrapperToIgnore(Class<?> classes) {
-		List classesToIgnore = Arrays.asList(classes);
-		if (RESULT_WRAPPERS_TO_IGNORE.containsAll(classesToIgnore))
-			RESULT_WRAPPERS_TO_IGNORE.removeAll(Arrays.asList(classes));
+		RESULT_WRAPPERS_TO_IGNORE.remove(classes);
 	}
 
 	/**
@@ -129,9 +135,7 @@ public class ConverterUtils {
 	 * @param classes the classes
 	 */
 	public static void removeResponseTypeToIgnore(Class<?> classes) {
-		List classesToIgnore = Arrays.asList(classes);
-		if (RESPONSE_TYPES_TO_IGNORE.containsAll(classesToIgnore))
-			RESPONSE_TYPES_TO_IGNORE.removeAll(Arrays.asList(classes));
+		RESPONSE_TYPES_TO_IGNORE.remove(classes);
 	}
 
 	/**
@@ -141,7 +145,11 @@ public class ConverterUtils {
 	 * @return the boolean
 	 */
 	public static boolean isFluxTypeWrapper(Class<?> rawClass) {
-		return FLUX_WRAPPERS_TO_IGNORE.stream().anyMatch(clazz -> clazz.isAssignableFrom(rawClass));
+		for (Class<?> clazz : FLUX_WRAPPERS_TO_IGNORE) {
+			if (clazz.isAssignableFrom(rawClass))
+				return true;
+		}
+		return false;
 	}
 
 	/**
@@ -150,9 +158,7 @@ public class ConverterUtils {
 	 * @param classes the classes
 	 */
 	public static void removeFluxWrapperToIgnore(Class<?> classes) {
-		List classesToIgnore = Arrays.asList(classes);
-		if (FLUX_WRAPPERS_TO_IGNORE.containsAll(classesToIgnore))
-			FLUX_WRAPPERS_TO_IGNORE.removeAll(Arrays.asList(classes));
+		FLUX_WRAPPERS_TO_IGNORE.remove(classes);
 	}
 
 	/**
@@ -179,9 +185,7 @@ public class ConverterUtils {
 	 * @param classes the classes
 	 */
 	public static void removeJavaTypeToIgnore(Class<?> classes) {
-		List classesToIgnore = Arrays.asList(classes);
-		if (JAVA_TYPE_TO_IGNORE.containsAll(classesToIgnore))
-			JAVA_TYPE_TO_IGNORE.removeAll(Arrays.asList(classes));
+		JAVA_TYPE_TO_IGNORE.remove(classes);
 	}
 
 	/**
@@ -191,7 +195,11 @@ public class ConverterUtils {
 	 * @return the boolean
 	 */
 	public static boolean isJavaTypeToIgnore(Class<?> rawClass) {
-		return JAVA_TYPE_TO_IGNORE.stream().anyMatch(clazz -> clazz.isAssignableFrom(rawClass));
+		for (Class<?> clazz : JAVA_TYPE_TO_IGNORE) {
+			if (clazz.isAssignableFrom(rawClass))
+				return true;
+		}
+		return false;
 	}
 
 }

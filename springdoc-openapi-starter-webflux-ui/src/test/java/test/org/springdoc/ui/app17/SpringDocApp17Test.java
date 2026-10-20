@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ class SpringDocApp17Test extends AbstractSpringDocActuatorTest {
 
 	@Test
 	void testIndex() {
-		EntityExchangeResult<byte[]> getResult = webTestClient.get().uri("/webjars/swagger-ui/index.html")
+		EntityExchangeResult<byte[]> getResult = webTestClient.get().uri("/swagger-ui/index.html")
 				.exchange()
 				.expectStatus().isOk()
 				.expectBody().returnResult();

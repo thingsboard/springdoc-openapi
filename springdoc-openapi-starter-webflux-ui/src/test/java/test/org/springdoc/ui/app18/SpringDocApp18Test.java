@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -45,8 +45,7 @@ import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 		properties = { "spring.webflux.base-path=/test",
 				"server.port=9218",
 				"springdoc.swagger-ui.path=/documentation/swagger-ui.html",
-				"springdoc.api-docs.path=/documentation/v3/api-docs",
-				"springdoc.webjars.prefix= /webjars-pref" })
+				"springdoc.api-docs.path=/documentation/v3/api-docs" })
 class SpringDocApp18Test extends AbstractCommonTest {
 
 	@LocalServerPort
@@ -61,12 +60,12 @@ class SpringDocApp18Test extends AbstractCommonTest {
 	}
 
 	@Test
-	public void testIndex() throws Exception {
+	void testIndex() throws Exception {
 		HttpStatusCode httpStatusMono = webClient.get().uri("/test/documentation/swagger-ui.html")
 				.exchangeToMono(clientResponse -> Mono.just(clientResponse.statusCode())).block();
 		assertThat(httpStatusMono).isEqualTo(HttpStatus.FOUND);
 
-		httpStatusMono = webClient.get().uri("/test/documentation/webjars-pref/swagger-ui/index.html")
+		httpStatusMono = webClient.get().uri("/test/documentation/swagger-ui/index.html")
 				.exchangeToMono(clientResponse -> Mono.just(clientResponse.statusCode())).block();
 		assertThat(httpStatusMono).isEqualTo(HttpStatus.OK);
 

@@ -2,7 +2,7 @@
  *
  *  *
  *  *  *
- *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *
  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  * you may not use this file except in compliance with the License.
@@ -25,10 +25,12 @@ package test.org.springdoc.api.v30.app196;
 import test.org.springdoc.api.v30.AbstractSpringDocV30Test;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.autoconfigure.OverrideAutoConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(properties = { "springdoc.show-actuator=true",
 		"springdoc.model-and-view-allowed=false" })
+@OverrideAutoConfiguration(enabled = true)
 public class SpringDocApp196Test extends AbstractSpringDocV30Test {
 
 	@SpringBootApplication

@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -46,7 +46,6 @@ public class JavaTimeOperationCustomizer implements OperationCustomizer {
 				Content content = response.getContent();
 				if (content.containsKey(MediaType.APPLICATION_JSON_VALUE)) {
 					Schema schema = content.get(MediaType.APPLICATION_JSON_VALUE).getSchema();
-					schema.getProperties().clear();
 					schema.setType("string");
 				}
 			}

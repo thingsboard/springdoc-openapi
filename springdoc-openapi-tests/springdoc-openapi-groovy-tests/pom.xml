@@ -1,11 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>org.springdoc</groupId>
+		<groupId>org.thingsboard</groupId>
 		<artifactId>springdoc-openapi-tests</artifactId>
-		<version>2.4.1-SNAPSHOT</version>
+		<version>3.1.1TB</version>
 	</parent>
 	<artifactId>springdoc-openapi-groovy-tests</artifactId>
+	<name>${project.artifactId}</name>
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.groovy</groupId>
@@ -13,7 +14,7 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.springdoc</groupId>
+			<groupId>org.thingsboard</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
@@ -21,6 +22,11 @@
 		<dependency>
 			<groupId>jakarta.servlet</groupId>
 			<artifactId>jakarta.servlet-api</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<!-- For Enhanced Pageable Support -->
@@ -36,6 +42,7 @@
 			<plugin>
 				<groupId>org.codehaus.gmavenplus</groupId>
 				<artifactId>gmavenplus-plugin</artifactId>
+				<version>${gmavenplus-plugin.version}</version>
 				<executions>
 					<execution>
 						<goals>

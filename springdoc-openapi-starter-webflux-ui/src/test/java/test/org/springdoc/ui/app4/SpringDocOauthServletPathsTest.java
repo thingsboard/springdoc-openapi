@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -30,13 +30,13 @@ import org.springframework.test.context.TestPropertySource;
 public class SpringDocOauthServletPathsTest extends AbstractSpringDocTest {
 
 	@Test
-	public void should_display_oauth2_redirect_page() throws Exception {
-		webTestClient.get().uri("/test/webjars/swagger-ui/oauth2-redirect.html").exchange()
+	void should_display_oauth2_redirect_page() {
+		webTestClient.get().uri("/test/swagger-ui/oauth2-redirect.html").exchange()
 				.expectStatus().isOk();
 	}
 
 	@Test
-	public void oauth2_redirect_url_calculated_with_context_path_and_servlet_path() throws Exception {
+	void oauth2_redirect_url_calculated_with_context_path_and_servlet_path() {
 		webTestClient.get().uri("/v3/api-docs/swagger-config").exchange()
 				.expectStatus().isOk();
 	}

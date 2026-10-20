@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -27,44 +29,59 @@ package org.springdoc.core.utils;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.core.converter.AnnotatedType;
+import io.swagger.v3.core.converter.ModelConverterContext;
+import io.swagger.v3.core.converter.ModelConverterContextImpl;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.core.converter.ResolvedSchema;
 import io.swagger.v3.core.util.AnnotationsUtils;
+import io.swagger.v3.core.util.PrimitiveType;
 import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.media.Encoding;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.SpecVersion;
+import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springdoc.core.providers.JavadocProvider;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestAttribute;
 
+import static org.springdoc.core.utils.SpringDocUtils.handleSchemaTypes;
+
 /**
  * The type Spring doc annotations utils.
+ *
  * @author bnasslahsen
  */
 @SuppressWarnings({ "rawtypes" })
@@ -79,6 +96,11 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	 * The constant ANNOTATIONS_TO_IGNORE.
 	 */
 	private static final List<Class> ANNOTATIONS_TO_IGNORE = Collections.synchronizedList(new ArrayList<>());
+
+	/**
+	 * The reusable context
+	 */
+	private static final ThreadLocal<Map<Boolean, ModelConverterContext>> MODEL_CONVERTER_CONTEXT_MAP = ThreadLocal.withInitial(HashMap::new);
 
 	static {
 		ANNOTATIONS_TO_IGNORE.add(Hidden.class);
@@ -118,18 +140,18 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	 * @return the schema
 	 */
 	public static Schema extractSchema(Components components, Type returnType, JsonView jsonView, Annotation[] annotations, SpecVersion specVersion) {
+		if (returnType == null) return null;
 		Schema schemaN = null;
-		ResolvedSchema resolvedSchema;
 		boolean openapi31 = SpecVersion.V31 == specVersion;
-		try {
-			resolvedSchema = ModelConverters.getInstance(openapi31)
-					.resolveAsResolvedSchema(
-							new AnnotatedType(returnType).resolveAsRef(true).jsonViewAnnotation(jsonView).ctxAnnotations(annotations));
-		}
-		catch (Exception e) {
-			LOGGER.warn(Constants.GRACEFUL_EXCEPTION_OCCURRED, e);
-			return null;
-		}
+		if (jsonView != null)
+			annotations = ArrayUtils.addAll(annotations, jsonView);
+
+		AnnotatedType annotatedType = new AnnotatedType(returnType)
+				.resolveAsRef(true)
+				.jsonViewAnnotation(jsonView)
+				.ctxAnnotations(annotations);
+		ResolvedSchema resolvedSchema = resolveAsResolvedSchema(openapi31, annotatedType);
+		
 		if (resolvedSchema != null) {
 			Map<String, Schema> schemaMap = resolvedSchema.referencedSchemas;
 			if (!CollectionUtils.isEmpty(schemaMap) && components != null) {
@@ -139,24 +161,38 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 					componentSchemas.putAll(schemaMap);
 				}
 				else
-					for (Map.Entry<String, Schema> entry : schemaMap.entrySet()) {
+					for (Entry<String, Schema> entry : schemaMap.entrySet()) {
 						// If we've seen this schema before but find later it should be polymorphic,
 						// replace the existing schema with this richer version.
+						Schema existingSchema = componentSchemas.get(entry.getKey());
 						if (!componentSchemas.containsKey(entry.getKey()) ||
-								(!entry.getValue().getClass().equals(componentSchemas.get(entry.getKey()).getClass()) && entry.getValue().getAllOf() != null)) {
+								(!entry.getValue().getClass().equals(existingSchema.getClass()) && entry.getValue().getAllOf() != null)) {
 							componentSchemas.put(entry.getKey(), entry.getValue());
+						}
+						else if (componentSchemas.containsKey(entry.getKey()) && schemaMap.containsKey(entry.getKey())) {
+							// Check to merge polymorphic types
+							Set<Schema> existingAllOf = new LinkedHashSet<>();
+							if (existingSchema.getAllOf() != null)
+								existingAllOf.addAll(existingSchema.getAllOf());
+							if (schemaMap.get(entry.getKey()).getAllOf() != null) {
+								existingAllOf.addAll(schemaMap.get(entry.getKey()).getAllOf());
+								existingSchema.setAllOf(new ArrayList<>(existingAllOf));
+							}
 						}
 					}
 				components.setSchemas(componentSchemas);
 			}
 			if (resolvedSchema.schema != null) {
-				schemaN = new Schema();
+				schemaN = new Schema(specVersion);
 				if (StringUtils.isNotBlank(resolvedSchema.schema.getName()))
 					schemaN.set$ref(COMPONENTS_REF + resolvedSchema.schema.getName());
 				else
 					schemaN = resolvedSchema.schema;
 			}
 		}
+		if (openapi31)
+			handleSchemaTypes(schemaN);
+
 		return schemaN;
 	}
 
@@ -186,7 +222,7 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 			ExampleObject[] examples = annotationContent.examples();
 			setExamples(mediaType, examples);
 			addExtension(annotationContent, mediaType, openapi31);
-			io.swagger.v3.oas.annotations.media.Encoding[] encodings = annotationContent.encoding();
+			Encoding[] encodings = annotationContent.encoding();
 			addEncodingToMediaType(jsonViewAnnotation, mediaType, encodings, openapi31);
 			if (StringUtils.isNotBlank(annotationContent.mediaType())) {
 				content.addMediaType(annotationContent.mediaType(), mediaType);
@@ -197,9 +233,10 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 			}
 		}
 
-		if (content.size() == 0 && annotationContents.length != 1) {
+		if (content.isEmpty() && annotationContents.length != 1) {
 			return Optional.empty();
 		}
+		handleSchemaTypes(content);
 		return Optional.of(content);
 	}
 
@@ -207,8 +244,8 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	 * Merge schema.
 	 *
 	 * @param existingContent the existing content
-	 * @param schemaN the schema n
-	 * @param mediaTypeStr the media type str
+	 * @param schemaN         the schema n
+	 * @param mediaTypeStr    the media type str
 	 */
 	public static void mergeSchema(Content existingContent, Schema<?> schemaN, String mediaTypeStr) {
 		if (existingContent.containsKey(mediaTypeStr)) {
@@ -216,9 +253,12 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 			if (!schemaN.equals(mediaType.getSchema())) {
 				// Merge the two schemas for the same mediaType
 				Schema firstSchema = mediaType.getSchema();
-				ComposedSchema schemaObject;
-				if (firstSchema instanceof ComposedSchema) {
-					schemaObject = (ComposedSchema) firstSchema;
+				Schema<?> schemaObject = null;
+				if (firstSchema == null) {
+					schemaObject = schemaN;
+				}
+				else if (firstSchema instanceof ComposedSchema) {
+					schemaObject = firstSchema;
 					List<Schema> listOneOf = schemaObject.getOneOf();
 					if (!CollectionUtils.isEmpty(listOneOf) && !listOneOf.contains(schemaN))
 						schemaObject.addOneOfItem(schemaN);
@@ -245,15 +285,20 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	 */
 	@SuppressWarnings("unchecked")
 	public static boolean isAnnotationToIgnore(MethodParameter parameter) {
-		boolean annotationFirstCheck = ANNOTATIONS_TO_IGNORE.stream().anyMatch(annotation ->
+		List<Class> snapshot;
+		synchronized (ANNOTATIONS_TO_IGNORE) {
+			snapshot = new ArrayList<>(ANNOTATIONS_TO_IGNORE);
+		}
+		boolean annotationFirstCheck = snapshot.stream().anyMatch(annotation ->
 				(parameter.getParameterIndex() != -1 && AnnotationUtils.findAnnotation(parameter.getMethod().getParameters()[parameter.getParameterIndex()], annotation) != null)
 						|| AnnotationUtils.findAnnotation(parameter.getParameterType(), annotation) != null);
 
-		boolean annotationSecondCheck = Arrays.stream(parameter.getParameterAnnotations()).anyMatch(annotation ->
-				ANNOTATIONS_TO_IGNORE.contains(annotation.annotationType())
-						|| ANNOTATIONS_TO_IGNORE.stream().anyMatch(annotationToIgnore -> annotation.annotationType().getDeclaredAnnotation(annotationToIgnore) != null));
+		if (annotationFirstCheck)
+			return true;
 
-		return annotationFirstCheck || annotationSecondCheck;
+		return Arrays.stream(parameter.getParameterAnnotations()).anyMatch(annotation ->
+				snapshot.contains(annotation.annotationType())
+						|| snapshot.stream().anyMatch(annotationToIgnore -> annotation.annotationType().getDeclaredAnnotation(annotationToIgnore) != null));
 	}
 
 	/**
@@ -263,7 +308,11 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	 * @return the boolean
 	 */
 	public static boolean isAnnotationToIgnore(Type type) {
-		return ANNOTATIONS_TO_IGNORE.stream().anyMatch(
+		List<Class> snapshot;
+		synchronized (ANNOTATIONS_TO_IGNORE) {
+			snapshot = new ArrayList<>(ANNOTATIONS_TO_IGNORE);
+		}
+		return snapshot.stream().anyMatch(
 				annotation -> (type instanceof Class
 						&& AnnotationUtils.findAnnotation((Class<?>) type, annotation) != null));
 	}
@@ -274,7 +323,7 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	 * @param classes the classes
 	 */
 	public static void addAnnotationsToIgnore(Class<?>... classes) {
-		ANNOTATIONS_TO_IGNORE.addAll(Arrays.asList(classes));
+		ANNOTATIONS_TO_IGNORE.addAll(List.of(classes));
 	}
 
 	/**
@@ -283,9 +332,7 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	 * @param classes the classes
 	 */
 	public static void removeAnnotationsToIgnore(Class<?>... classes) {
-		List classesToIgnore = Arrays.asList(classes);
-		if (ANNOTATIONS_TO_IGNORE.containsAll(classesToIgnore))
-			ANNOTATIONS_TO_IGNORE.removeAll(Arrays.asList(classes));
+		ANNOTATIONS_TO_IGNORE.removeAll(List.of(classes));
 	}
 
 	/**
@@ -297,8 +344,8 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	 * @param openapi31          the openapi 31
 	 */
 	private static void addEncodingToMediaType(JsonView jsonViewAnnotation, MediaType mediaType,
-			io.swagger.v3.oas.annotations.media.Encoding[] encodings, boolean openapi31) {
-		for (io.swagger.v3.oas.annotations.media.Encoding encoding : encodings) {
+			Encoding[] encodings, boolean openapi31) {
+		for (Encoding encoding : encodings) {
 			addEncodingToMediaType(mediaType, encoding, jsonViewAnnotation, openapi31);
 		}
 	}
@@ -322,7 +369,7 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	 * Sets examples.
 	 *
 	 * @param mediaType the media type
-	 * @param examples the examples
+	 * @param examples  the examples
 	 */
 	private static void setExamples(MediaType mediaType, ExampleObject[] examples) {
 		if (examples.length == 1 && StringUtils.isBlank(examples[0].name())) {
@@ -365,7 +412,7 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 			getSchema(annotationContent, components, jsonViewAnnotation, openapi31).ifPresent(mediaType::setSchema);
 			if (annotationContent.schemaProperties().length > 0) {
 				if (mediaType.getSchema() == null) {
-					mediaType.schema(new Schema<Object>().type("object"));
+					mediaType.schema(new ObjectSchema());
 				}
 				Schema oSchema = mediaType.getSchema();
 				for (SchemaProperty sp : annotationContent.schemaProperties()) {
@@ -433,10 +480,35 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 	}
 
 	/**
+	 * Attempt to cast the default value so that it matches the {@link Schema} type.
+	 * If the value cannot be cast then the provided default value is returned as-is.
+	 *
+	 * @param schema       the schema that will have the default value
+	 * @param defaultValue the default value
+	 * @return the cast default value
+	 */
+	public static Object castDefaultValue(Schema schema, Object defaultValue) {
+		if (schema != null && defaultValue != null) {
+			PrimitiveType primitiveType = PrimitiveType.fromTypeAndFormat(schema.getType(), schema.getFormat());
+			if (primitiveType != null) {
+				Schema<?> primitiveSchema = primitiveType.createProperty();
+				if (primitiveType.equals(PrimitiveType.DATE) && defaultValue instanceof LocalDate localDate) {
+					defaultValue = localDate.toString();
+				}
+				primitiveSchema.setDefault(defaultValue);
+				if (primitiveSchema.getDefault() != null) {
+					defaultValue = primitiveSchema.getDefault();
+				}
+			}
+		}
+		return defaultValue;
+	}
+
+	/**
 	 * Resolve default value object.
 	 *
 	 * @param defaultValueStr the default value str
-	 * @param objectMapper the object mapper
+	 * @param objectMapper    the object mapper
 	 * @return the object
 	 */
 	public static Object resolveDefaultValue(String defaultValueStr, ObjectMapper objectMapper) {
@@ -451,4 +523,73 @@ public class SpringDocAnnotationsUtils extends AnnotationsUtils {
 		}
 		return defaultValue;
 	}
+
+	/**
+	 * Gets headers.
+	 *
+	 * @param annotationHeaders  the annotation headers
+	 * @param components         the components
+	 * @param jsonViewAnnotation the json view annotation
+	 * @param openapi31          the openapi 31
+	 * @return the headers
+	 */
+	public static Optional<Map<String, Header>> getHeaders(io.swagger.v3.oas.annotations.headers.Header[] annotationHeaders, Components components, JsonView jsonViewAnnotation, boolean openapi31) {
+		Optional<Map<String, Header>> headerMap = AnnotationsUtils.getHeaders(annotationHeaders, components, jsonViewAnnotation, openapi31);
+		if (openapi31) {
+			headerMap.ifPresent(map -> {
+				for (Entry<String, Header> entry : map.entrySet()) {
+					Header header = entry.getValue();
+					Schema schema = header.getSchema();
+					handleSchemaTypes(schema);
+				}
+			});
+		}
+		return headerMap;
+	}
+
+	/**
+	 * Clear cache.
+	 *
+	 * @param javadocProvider the javadoc provider
+	 */
+	public static void clearCache(JavadocProvider javadocProvider) {
+		if (javadocProvider != null) {
+			javadocProvider.clearCache();
+		}
+		MODEL_CONVERTER_CONTEXT_MAP.remove();
+	}
+
+	/**
+	 * Resolve as resolved schema resolved schema.
+	 *
+	 * @param openapi31 the openapi 31
+	 * @param type      the type
+	 * @return the resolved schema
+	 */
+	private static ResolvedSchema resolveAsResolvedSchema(boolean openapi31, AnnotatedType type) {
+		try {
+			ModelConverterContext modelConverterContext = getModelConverterContext(openapi31);
+			ResolvedSchema resolvedSchema = new ResolvedSchema();
+			resolvedSchema.schema = modelConverterContext.resolve(type);
+			resolvedSchema.referencedSchemas = modelConverterContext.getDefinedModels();
+			return resolvedSchema;
+		}
+		catch (Exception e) {
+			LOGGER.warn(Constants.GRACEFUL_EXCEPTION_OCCURRED, e);
+			return null;
+		}
+	}
+
+	/**
+	 * Gets model converter context.
+	 *
+	 * @param openapi31 the openapi 31
+	 * @return the model converter context
+	 */
+	private static ModelConverterContext getModelConverterContext(boolean openapi31) {
+		Map<Boolean, ModelConverterContext> perThread = MODEL_CONVERTER_CONTEXT_MAP.get();
+		return perThread.computeIfAbsent(openapi31, key ->
+				new ModelConverterContextImpl(ModelConverters.getInstance(openapi31).getConverters()));
+	}
+
 }

@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright 2019-2020 the original author or authors.
+ *  * Copyright 2019-2026 the original author or authors.
  *  *
  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 		properties = { "management.endpoints.web.exposure.include=*", "springdoc.use-management-port=true",
-				"management.server.port=9293", "management.endpoints.web.base-path=/application" })
+				"management.server.port=9393", "management.endpoints.web.base-path=/application" })
 class SpringDocApp14Test extends AbstractSpringDocActuatorTest {
 
 	@Test
@@ -42,18 +42,26 @@ class SpringDocApp14Test extends AbstractSpringDocActuatorTest {
 		String contentAsString = mvcResult.getResponse().getContentAsString();
 		assertTrue(contentAsString.contains("Swagger UI"));
 	}
-
 	@Test
-	public void testIndexActuator() {
-		String contentAsString = actuatorRestTemplate.getForObject("/application/swagger-ui", String.class);
+	void testIndexActuator() {
+		String contentAsString = actuatorClient.get()
+				.uri("/application/swagger-ui")
+				.retrieve()
+				.body(String.class);
+
 		assertTrue(contentAsString.contains("Swagger UI"));
 	}
 
 	@Test
-	public void testIndexSwaggerConfig() throws Exception {
-		String contentAsString = actuatorRestTemplate.getForObject("/application/swagger-ui/swagger-config", String.class);
+	void testIndexSwaggerConfig() throws Exception {
+		String contentAsString = actuatorClient.get()
+				.uri("/application/swagger-ui/swagger-config")
+				.retrieve()
+				.body(String.class);
+
 		String expected = getContent("results/app14-1.json");
-		assertEquals(expected, contentAsString, true);
+
+		assertEquals(expected, contentAsString, true); // true = strict comparison
 	}
 
 	@SpringBootApplication

@@ -3,7 +3,7 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
+ *  *  *  *  * Copyright 2019-2026 the original author or authors.
  *  *  *  *  *
  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
  *  *  *  *  * you may not use this file except in compliance with the License.
@@ -58,12 +58,12 @@ class SpringDocApp19Test extends AbstractCommonTest {
 	}
 
 	@Test
-	public void testIndex() throws Exception {
+	void testIndex() throws Exception {
 		HttpStatusCode httpStatusMono = webClient.get().uri("/")
 				.exchangeToMono(clientResponse -> Mono.just(clientResponse.statusCode())).block();
 		assertThat(httpStatusMono).isEqualTo(HttpStatus.FOUND);
 
-		httpStatusMono = webClient.get().uri("/webjars/swagger-ui/index.html")
+		httpStatusMono = webClient.get().uri("/swagger-ui/index.html")
 				.exchangeToMono(clientResponse -> Mono.just(clientResponse.statusCode())).block();
 		assertThat(httpStatusMono).isEqualTo(HttpStatus.OK);
 

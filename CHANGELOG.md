@@ -5,6 +5,578 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2026-09-06
+
+### Security
+
+- [GHSA-6f5m-mhjg-qwxq](https://github.com/springdoc/springdoc-openapi/security/advisories/GHSA-6f5m-mhjg-qwxq) – MCP tool callbacks do not encode path parameters, allowing request retargeting
+- [GHSA-4v2q-56v7-2cpw](https://github.com/springdoc/springdoc-openapi/security/advisories/GHSA-4v2q-56v7-2cpw) – MCP transport, admin and dashboard endpoints are exposed by default
+- [GHSA-m4cg-mhpg-rh2r](https://github.com/springdoc/springdoc-openapi/security/advisories/GHSA-m4cg-mhpg-rh2r) – MCP audit events record credentials and request/response bodies without redaction
+- [GHSA-5f9r-4mc4-qh3c](https://github.com/springdoc/springdoc-openapi/security/advisories/GHSA-5f9r-4mc4-qh3c) – Unbounded MCP pending-confirmation store allows memory exhaustion
+- [GHSA-jcgg-59c8-w4wh](https://github.com/springdoc/springdoc-openapi/security/advisories/GHSA-jcgg-59c8-w4wh) – MCP request context in a `ThreadLocal` can leak headers between concurrent WebFlux requests
+- [GHSA-rhhx-6j8h-8cvw](https://github.com/springdoc/springdoc-openapi/security/advisories/GHSA-rhhx-6j8h-8cvw) – Unbounded per-locale OpenAPI cache allows memory exhaustion via `Accept-Language`
+- [GHSA-c925-vm88-mpp9](https://github.com/springdoc/springdoc-openapi/security/advisories/GHSA-c925-vm88-mpp9) – Scalar starters trust client-supplied forwarded headers and render from a shared mutable bean
+- [CVE-2026-75838](https://github.com/advisories/GHSA-748c-f84h-hp2v) – Cross-site scripting in the DOMPurify bundled with swagger-ui, addressed by upgrading swagger-ui to **5.32.14**
+
+### Added
+
+- #3340 – Describe `JsonNullable` values without their Java wrapper
+- #3325 – Manage the swagger artifacts in `springdoc-openapi-bom`, so that modules holding only the annotations stay in lockstep
+- #3321 – Add `springdoc.login-endpoint.username-example` and `springdoc.login-endpoint.password-example` to document the Spring Security login endpoint
+
+### Changed
+
+- **MCP is now opt-in.** Set `springdoc.ai.mcp.enabled=true`, and `springdoc.ai.mcp.dashboard-enabled=true` for the dashboard
+- **The Scalar starters no longer register forwarded-header handling.** Set `server.forward-headers-strategy=framework` (or `native`) behind a trusted proxy
+- Add `springdoc.cache.max-entries` (default `100`) to bound the per-locale OpenAPI cache
+- Add `springdoc.ai.mcp.audit.redact` (default `true`) to mask secrets in MCP audit events
+- Document that the MCP approval flow is a confirmation step, not an authorization control
+- Document the security policy and the release versioning scheme
+- #3351 – `java.time.Duration`, `LocalTime` and `OffsetTime` are now resolved by swagger-core instead of being forced to a bare `string`, so they carry a `format` (`duration` and `partial-time` respectively for the first two)
+- A property whose type only implements `Set` indirectly (`LinkedHashSet`, `TreeSet`, …) is now described with `uniqueItems: true`, following [swagger-api/swagger-core#5265](https://github.com/swagger-api/swagger-core/pull/5265)
+- Upgrade swagger-core to version **2.2.55**
+- Upgrade swagger-ui to version **5.32.14**
+
+### Fixed
+
+- #3328, #3337 – `/v3/api-docs` fails with a `NullPointerException` when spring-hateoas is on the classpath without `HateoasProperties`
+- #3314 – `Json Processing Exception occurred` is logged for every constrained parameter whose schema is not a `JsonSchema`
+- #3317 – An injected `HttpHeaders` parameter is described as a schema
+- #3332 – The properties a Kotlin entity inherits from an `@Embeddable` are missing from the Spring Data REST schemas
+- #3320 – `@Order` and `Ordered` ignored when applying customizers
+- #3319 – A `Page` nested in another schema is not replaced by `PagedModel`
+- #3313 – Springdoc auto-configurations rely on unspecified auto-configuration ordering
+- #3331 – Validation annotations declared inside `Optional` parameters are dropped
+- #3322 – Validation annotations on a container's type argument leak between parameters
+- #3315 – An OAS 3.1 `JsonSchema` cannot be cloned through JSON
+- #3300 – TYPE_USE annotations on `@ParameterObject` fields are not passed along
+- #3341 – Stabilize Spring Data `Sort` and `Pageable` schema property order
+- #3338 – Kotlin nullability interpretation of the `Any?` type
+- #3136 – A Spring Data REST association to a non-exported entity expands its `@EmbeddedId` and `@MapsId` fields recursively in the response schemas
+- The Spring Data REST response post-processing rewrote an association property in place, so the `…Response` refs could leak into the schema shared with the request body representation
+
+## [3.1.0] - 2026-07-31
+
+### Added
+
+- #3269 – Add mechanism to disable `nullable` for Kotlin properties
+- Allow request-specific Swagger UI index transformation
+
+### Changed
+
+- Upgrade Spring Boot to version **4.1.0**
+- Upgrade Spring AI to version **2.0.0**
+- Upgrade swagger-core to version **2.2.52**
+- Upgrade swagger-ui to version **5.32.11**
+- #3307 – Act upon SonarQube warnings
+- #3306 – Act upon SonarQube warnings
+
+### Fixed
+
+- #3304 – Kotlin parent class's field is not properly marked as nullable
+- #3294 – Duplicated path getting `swagger-config`
+- #3293 – Inconsistent OpenAPI schema naming with `SNAKE_CASE`: some Java record fields remain camelCase
+- #3292 – Make `WebProperties` and `WebMvcProperties` optional in `SwaggerConfig`
+- #3284 – Upgrade swagger-core from version 2.2.48 to 2.2.49
+- #3282 – Preserve version from `nest()` predicate across all routes in `nest`
+- #3281 – Stabilize Spring Data `Page` schema property order
+- #3274 – Description disappears from the generated json after upgrade to 3.0.3
+- #3270 – Validation annotation of `ParameterObject` property applied to `PathVariable` with the same name, even in unrelated endpoints
+- #3266 – Upgrade swagger-core from version 2.2.47 to 2.2.48
+- #3263 – Null key for a `Map` not allowed in JSON
+
+## [3.0.3] - 2026-04-12
+
+### Added
+
+- #3246 – Add Springdoc OpenAPI MCP (Model Context Protocol) support
+- #3256 – Auto-set `nullable: true` for Kotlin nullable types in schema properties
+- #3239 – Add support for the `@Range` constraint validation annotation
+- #3244 – Handle default values for `LocalDate`
+
+### Changed
+
+- Upgrade Spring Boot to version **4.0.5**
+- Upgrade swagger-core to version **2.2.47**
+- Upgrade swagger-ui to version **5.32.2**
+- #3260 – `@ConditionalOnClass(HateoasProperties.class)` in `SpringDocHateoasConfiguration`
+- Forwards all MCP non-transport headers to downstream methods
+- Dynamically resolve the base path from `window.location.pathname` for MCP UI
+
+### Fixed
+
+- #3258 – Setting API Version Required when using WebFlux breaks the Swagger UI
+- #3259 – Annotated Generic properties getting applied to sibling properties
+- #3255 – `Direction` enum: fixed visibility scope of group order so that `setGroupsOrder` method can be used
+- #3247 – Preserve YAML group URLs in Swagger UI
+- #3245 – Upgrade swagger-core from version 2.2.43 to 2.2.45
+- #3235 – `PropertyResolverUtils` retains a `JsonNode` when reading an `ExtensionProperty` annotation
+- #3226 – Propagate `JsonView` context when resolving `Page<T>` schema
+
+## [3.0.2] - 2026-02-27
+
+### Added
+
+- #3229 – Add support for Spring Framework API Versioning with Functional Endpoints
+- #3208 – Add `springdoc.swagger-ui.document-title` property
+
+### Changed
+
+- Upgrade Spring Boot to version **4.0.3**
+- Upgrade swagger-core to version **2.2.43**
+- Upgrade swagger-ui to version **5.32.0**
+- Upgrade Scalar to version **0.5.55**
+
+### Fixed
+
+- #3232 – Gracefully handle springdoc endpoint paths during API version resolution
+- #3230 – Scalar source URLs resolve to `null/<groupName>` on second request when using `GroupedOpenApi`
+- #3228 – springdoc-openapi-starter 3.x doesn't depend on `org.springframework.boot:spring-boot-starter`
+- #3220 – Reachability metadata not compatible with GraalVM 25
+- #3195 – Application won't compile when OpenApi and spring-boot-data-rest is present
+- #3193 – `OpenApi` field in `SpringDocConfigProperties` does not comply with camel case naming conventions
+- #3215 – Type annotation not considered when Kotlin is not present
+- #3199 – Prevent duplicate `_links` in `allOf` child schemas
+- #3198 – Property resolution for parameter default values
+- #3206 – Upgrade swagger-core from version 2.2.41 to 2.2.42
+
+## [3.0.1] - 2026-01-01
+
+### Added
+
+- #3122 – Add log notifications when SpringDocs / Scalar are enabled by default
+- #3123 – Add support for serving static resources
+- #3151 – Add `@Order` to `ApplicationReadyEvent` listener
+- #3158 – Add support for API groups in Scalar
+- #3187 – Add Scalar WebMVC and WebFlux support
+- #3185 – Disable creation of blank GitHub issues (GitHub settings & workflow)
+- #3186 – Decouple Web Server APIs following Spring Boot modularization
+- #3131 – Improve warning messages when documentation is explicitly enabled
+- #3183 – Remove unused operations consumer from route builder methods
+- #3141 – Change handling so `useReturnTypeSchema` is evaluated at HTTP status code level instead of method level
+
+### Changed
+
+- Upgrade Spring Boot to version **4.0.1**
+- Upgrade swagger-core to version **2.2.41**
+- Upgrade swagger-ui to version **5.31.0**
+- Upgrade Scalar to version **0.4.3**
+
+### Fixed
+
+- #3133 – Fix regression where content type from Swagger `@RequestBody` did not take precedence
+- #3146 – Fix WebJar resource handler mappings for Swagger UI resources
+- #3168 – Support `@Schema` annotations on Kotlin value classes
+- #3178 – Fix regression when generating documentation for Kotlin `LinkedHashSet`
+- #3170 – Fix warnings when setting title and description in `application.yml`
+- #3173 – Fix `/v3/api-docs` returning Base64-encoded response with Spring Framework 7.0.2
+- #3155 – Fix native image support regression with SpringDoc 3.0 and Spring Boot 4.0
+
+## [3.0.0] - 2025-11-21
+
+### Added
+- #2975 - Spring Framework 7 - Initial API versioning support
+- #3123 - Support static resources for webflux
+
+### Changed
+- Upgrade to Spring Boot 4.0.0
+- Upgrade to Scalar 0.4.3
+
+### Fixed
+
+- #3131 - Warning messages when docs are explicitly enabled
+- #3121 - NPE in KotlinDeprecatedPropertyCustomizer - resolvedSchema is null
+
+## [3.0.0-RC1] - 2025-11-02
+
+### Added
+- #3095 - Add support for Spring Boot 4.0.0-RC1
+
+## [2.8.14] - 2025-11-02
+
+### Added
+
+- #3090 - Add logs to notify when SpringDocs/Scalar is enabled because SpringDocs/Scalar is enabled by default
+
+### Changed
+
+- Upgrade swagger-ui to v5.30.1
+- Upgrade swagger-core to v2.2.38
+- Upgrade spring-boot to v3.5.7
+- Upgrade commons-lang3 to v3.18.0
+- Upgrade scalar to v0.3.12
+
+### Fixed
+
+- #3107 - Fix:compatible with lower version of getOpenApi().
+- #3121 - NPE in KotlinDeprecatedPropertyCustomizer - resolvedSchema is null
+
+## [2.8.13] - 2025-09-07
+
+### Added
+
+- #3084 - Add Scalar Support
+
+### Changed
+
+- Upgrade swagger-ui to v5.28.1
+
+### Fixed
+
+- #3076 - With oneOf the response schema contains an extra type: string
+
+## [2.8.12] - 2025-09-01
+
+### Changed
+
+- Upgrade swagger-ui to v5.28.0
+
+### Fixed
+
+- #3073 - Duplicate key class Parameter when documenting two GET methods with same path and PathVariable.
+- #3071 - @io.swagger.v3.oas.annotations.parameters.RequestBody does not work well with @RequestPart
+- #3066 - Parameter is now required after upgrading to springdoc-openapi 2.8.10
+
+## [3.0.0-M1] - 2025-08-20
+
+### Added
+- #3062 - Add Spring Boot 4.0.0-M2 support
+
+## [2.8.10] - 2025-08-20
+
+### Added
+
+- #3046 - Feature Request: Support @jakarta.annotation.Nonnull.
+- #3042 - Support externalDocs configure on SpecPropertiesCustomizer
+- #3057 - Refactor webhook discovery and scanning mechanism 
+
+### Changed
+
+- Upgrade spring-boot to v3.5.4
+- Upgrade swagger-ui to v5.27.1
+- Upgrade swagger-core to 2.2.36
+
+### Fixed
+
+- #3050 - @RequestPart JSON parameters missing Content-Type in generated curl commands, causing 415 errors.
+- #2978 - Parameter is no longer optional after upgrade to 2.8.8
+- #3022 - NullPointerException thrown in SchemaUtils.
+- #3026 - Fix unexpected merging of media types
+- #3036 - Fixed "desciption" 
+- #3039 - Fix: Property resolution for extensions within @OpenAPIDefinition Info object
+- #3051 -  Fixes so that a RequestPart with a Map is added to the RequestBody
+- #3060 - Use adaptFromForwardedHeaders instead of deprecated fromHttpRequest 
+
+## [2.8.9] - 2025-06-10
+
+### Added
+
+- #2944 - Support for @Positive
+- #3011 - type-use for method parameters
+
+### Changed
+
+- Upgrade spring-boot to version 3.5.0
+
+### Fixed
+
+- #2982 - application/problem+json content type is not set for ProblemDetails
+- #2990 - Issues with POST Request, application/x-www-form-urlencoded and only one parameter
+- #2998 - io.swagger.v3.oas.annotations.Webhook does not work when defined on the method level
+- #3012 - Order of examples is (sometimes) not preserved
+
+## [2.8.8] - 2025-05-04
+
+### Fixed
+
+- #2977 - Handle projects not using kotlin-reflect #2977
+
+## [2.8.7] - 2025-05-04
+
+### Added
+
+- #2944 - Introducing springdoc-openapi-bom project
+- #2948 - Customize Servers via application.yml
+- #2963 - Set default content type for problem details object to application/problem+jso
+- #2971 - List of value classes in Kotlin
+
+### Changed
+
+- Upgrade swagger-ui to v5.21.0
+- Upgrade swagger-core to 2.2.30
+- Upgrade spring-boot to version 3.4.5
+- Upgrade spring-security-oauth2-authorization-server to version 1.4.3
+
+### Fixed
+
+- #2947 - Unexpected warning "Appended trailing slash to static resource location"
+- #2960 - NPE when customizing group's open-api without specifying any schema
+- #2969 - fix path to register resource handler to work SwaggerIndexPageTransformer
+  considering /webjar path prefix
+- #2964 - Cannot add custom description and example for java.time.Duration since v2.8.6
+- #2972 - @Header(schema = @Schema(type = "string")) generates empty or broken schema in
+  OpenAPI output since 2.8.0
+- #2976, #2967 - Build Failure due to Private Inner Class.
+
+## [2.8.6] - 2025-03-23
+
+### Added
+
+- #2909 - Check both SerDe BeanPropertyDefinition for @JsonUnwrapped/@Schema
+- #2927 - Bail sealed class subtype introspection on Schema
+- #2917 - Add Future to ignored response wrappers
+- #2938 - Add out of the box support for LocalTime, YearMonth, MonthDay
+
+### Changed
+
+- Upgrade swagger-ui to v5.20.1
+- Upgrade swagger-core to 2.2.29
+- Upgrade spring-cloud-function to 4.2.2
+- Upgrade spring-boot to version 3.4.4
+
+### Fixed
+
+- #2928 - Add missing builder methods in SchemaBuilder
+- #2905 - ModelResolver.enumAsRef = true result in invalid openapi with actuator using
+  enum param
+- #2939 - Duplicate ModelConverter registration with Spring Boot DevTools
+- #2941 - SpringBoot native fails /v3/api-docs when using a Map as an http entity field
+
+## [2.8.5] - 2025-02-16
+
+### Added
+
+- #2696 - Do not require JsonSubType annotation for sealed classes
+- #2898 - add needed runtime reflection hints for native image
+- #2891 - Refactor trimIndent Method
+- #2931 - OpenAPIService serverBaseUrl is not thread safe
+- #2933 - Wrong schema generation with PagedModel generated VIA_DTO and wrapped in
+  ResponseEntity
+
+### Changed
+
+- Upgrade swagger-ui to v5.18.3
+
+### Fixed
+
+- #2902 - Schema replaced by String when using @ApiResponse with RepresentationModel (
+  Hateoas links)
+- #2876 - Restentpoints with same name get mix up
+- #2895 - Only filter out actuator endpoints with double asterisks.
+- #2894 - respect @JsonUnwrapped & @Schema on props not fields only
+- #2881 - fix defaultValue when using @PageableDefault together with
+  one-indexed-parameters
+- #2888 - Provide a better consistency for parameters and responses order.
+
+## [2.8.4] - 2025-01-25
+
+### Added
+
+- #2873 - Improve performance of getGenericMapResponse
+- #2836 - Provide option to set allowed locales
+- 2862 - Align Swagger-UI Prefix Path with Swagger-WebMvc Behavior
+
+### Changed
+
+- Upgrade spring-boot to 3.4.2
+- Upgrade spring-cloud-function to 4.2.1
+- Upgrade swagger-core to 2.2.28
+
+### Fixed
+
+- #2870 - Springdoc 2.8.x + Spring Boot 3.4.1 breaks native image support
+- #2869 - Exception logged when generating schema for delete method of Spring Data
+  repository.
+- #2856 - @JsonUnwrapped is ignored in new version of lib.
+- #2852 - @Schema(types = "xxx") does not work for multipart param with enabled
+  springdoc.default-support-form-data config option.
+
+## [2.8.3] - 2025-01-12
+
+### Added
+
+- #2851 - Refine condition, for ignoring types when using PolymorphicModelConverter
+
+## [2.8.2] - 2025-01-12
+
+### Added
+
+- #2849 - Provide better compatibility for projects migrating from OAS 3.0 to OAS 3.1
+
+### Fixed
+
+- #2846 - ClassCastException with spring-data-rest and openapi version 3.1 bug
+- #2844 - PageableObject and SortObject are called Pageablenull and Sortnull
+
+## [2.8.1] - 2025-01-06
+
+### Fixed
+
+- #2834 - java.lang.ClassNotFoundException: kotlin.reflect.full.KClasses when upgrade from
+  2.7.0 to 2.8.0
+
+## [2.8.0] - 2025-01-03
+
+### Added
+
+- #2790 - Moving to OpenAPI 3.1 as the default implementation for springdoc-openapi
+- #2817 - Obey annotations when flattening ParameterObject fields
+- #2826 - Make it possible to mark parameters with @RequestParam annotation to be sent in
+  form instead of query.
+- #2822 - Support returning null in ParameterCustomizer
+- #2830 - Add support for deprecated fields.
+- #2780 - Add Security Schema by AutoConfigure
+
+### Changed
+
+- Upgrade spring-boot to 3.4.1
+- Upgrade spring-cloud-function to 4.2.0
+- Upgrade swagger-core to 2.2.27
+
+### Fixed
+
+- #2804 - Stable release 2.7.0 depends on Spring Cloud Milestone 4.2.0-M1
+- #2828 - Required a bean of type '
+  org.springframework.data.rest.webmvc.mapping.Associations' that could not be found.
+- #2823 - Capturing pattern in identical paths only renders the path element of one method
+- #2817 - Automatically add required if a field is @notNull or @NotBlank.
+- #2814 - An unresolvable circular reference with
+  management.endpoint.gateway.enabled=true.
+- #2798 - Object schema generated for Unit Kotlin type.
+- #2797 - Removing operationId via customizer does not work anymore.
+- #2833 - Resolve infinite recursion and add example test with OpenAPI v3.1
+- #2827 - Ignoring @Parameter(required = false)
+
+## [2.7.0] - 2024-23-11
+
+### Added
+
+- #2777 - Add SortAsQueryParam annotation
+- #2786 - No static resource swagger-ui/index.html error after migration to 2.7.0-RC1
+
+### Changed
+
+- Upgrade spring-boot to 3.4.0
+- Upgrade swagger-ui to 5.18.2
+- Upgrade spring-security-oauth2-authorization-server to 1.4.0
+
+## [2.7.0-RC1] - 2024-11-06
+
+### Added
+
+- #2649 - Add Encoding to multiple files and JSON payloads request test case
+- #2653 - Trim indent apply schema description
+- #2664 - Refactor Replace hardcoded schema prefix length
+- #2509, #2668 - Replace swagger urls in
+  org.springdoc.core.properties.AbstractSwaggerUiConfigProperties#urls only if url is
+  changed
+- #2727 - Display nullable request body with map type
+- #2746 - Readme.md add gradle import
+- #2760 - Added support for RequestBody as a meta-annotation
+- #2703 - Display nullable request body with map type
+- #2657 - Add support for OAS v3.1 webhooks
+
+### Changed
+
+- Upgrade spring-boot to 3.4.0-RC1
+- Upgrade swagger-core to 2.2.25
+- Upgrade swagger-ui to 5.18.1
+- Upgrade spring-cloud-function to 4.2.0-M1
+- Upgrade spring-security-oauth2-authorization-server to 1.4.0-M2
+
+### Fixed
+
+- #2752 - Swagger doesn't work after custom annotation replacing request parameters
+- #2747 - Move to webjars-locator-lite, in preparation for spring-boot 3.4 GA
+- #2705 - @Schema oneOf config is ignored when generate the api-docs
+- #2744 - SpringDocUI doest add Javadoc into swagger from abstract class
+- #2708 - Spring Boot (Webflux) - Swagger UI - redirect URI does not include Gateway
+  Prefix
+- #2725 - Serialization to openapi of org.springframework.data.domain.Sort is wrong for
+  Spring Boot >2.x
+- #2740 - Swagger-ui ignores property springdoc.swagger-ui.supported-submit-methods
+- #2733 - Bad schema return type when created a generic wrapper class for response entity
+- #2687 - Failed to load api definition after spring boot 3.4.0-M2
+- #2642 - Calling Swagger UI via different context paths fails
+- #2709 - Annotation @Hidden on rest controller class level doesn't work due to spring
+  default proxying mechanism CGLIB
+- #2642 - Calling Swagger UI via different context paths fails
+- #2663 - Content definition in @ApiResponse remove schema generated based on the returned
+  value
+- #2646 - The operationId is unnecessarily deduplicated for a requestBody with multiple
+  content types
+- #2643 - UpperSnakeCaseStrategy is not working with spring boot and ParameterObject
+- #2640 - @JsonUnwrapped is ignored when PolymorphicConverter is enabled
+- #2638 - Boolean Parameter with @Schema Annotation Changes Type to string in OpenAPI
+  Documentation
+- #2659 - Fix typo in SpringSecurityLoginEndpointCustomizer method name
+- #2660 - Update Response Code
+- #2442, #2669 - Fix SpringDocApp193Test for Java 21 and above
+- #2671 - Ensure default media type order is preserved using LinkedHashSet in mergeArrays
+- #2711 - Missing descriptions on Kotlin ByteArray fields
+- #2733 - Bad schema return type when created a generic wrapper class for response entity
+
+## [2.6.0] - 2024-06-30
+
+### Added
+
+- #2561 - NPE occurs when outputting an OpenAPI document since 2.5.0
+- #2579 - Add support for leading tab characters with trim-kotlin-indent.
+- #2589 - Pass HttpRequest to ServerBaseUrlCustomizer
+- #2596, #2600 - consumes and produces calculation. Fixes
+- #2625, #2626 - Replace Page schema with PagedModel when pageSerializationMode is set to
+  VIA_DTO
+- #2627 - Ensure compatibility with previous version of spring data
+- #2576 - GroupedApi orders by displayName instead of name.
+- #2584 - Dynamically define ApiGroups does not work.
+- #2595 - Spring security support of @RegisteredOAuth2AuthorizedClient
+
+### Changed
+
+- Upgrade spring-boot to 3.3.0
+- Upgrade swagger-core to 2.2.22
+- Upgrade swagger-ui to 5.17.14
+- Upgrade spring-cloud-function to 4.1.2
+- Upgrade spring-security-oauth2-authorization-server to 1.3.0
+
+### Fixed
+
+- #2577 - Fix missing exception response types in OpenAPI spec
+- #2591 - When an entity class contains fields of Class<?> type, an infinite loop.
+- #2603 - PolymorphicModelConverter only handles direct subtypes and misses indirect.
+- #2606 - Spring Authorization Server Metadata Endpoint not compatible.
+- #2621 - Content-type for POST endpoints with multipart/form-data does not work since
+  v2.4.0.
+- #2622 - Kotlin enums are always marked as required if used in Java controllers.
+- #2601 - Multiple Superclasses Are Not Mapped To Multiple allOf If Used In Different
+  Services.
+- #2597 - Polymorphic fields on polymorphic parents don't get correct oneOf docs
+  generated.
+
+## [2.5.0] - 2024-04-01
+
+### Added
+
+- #2318 - Add Info to GroupedOpenAPI properties
+- #2554 - Remove duplicate words from comments
+- #2418 - Improve support for externalizing strings in generated openapi
+- #2535 - Add 'springdoc.trim-kotlin-indent' property to handle Kotlin multiline string
+  indentation
+
+### Changed
+
+- Upgrade spring-boot to 3.2.4
+- Upgrade swagger-core to 2.2.21
+- Upgrade swagger-ui to 5.13.0
+
+### Fixed
+
+- #2525 - Inherited Methods Not Included in Swagger Documentation with @RouterOperation in
+  Spring Boot WebFlux Application
+- #2526 - SpringDoc bean naming conflict error with GraphQL Spring boot starter
+- #2540 - Fix typo in SpringRepositoryRestResourceProvider.java
+- #2549 - Fix README.md
+
 ## [2.4.0] - 2024-03-12
 
 ### Added
@@ -27,26 +599,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #2472 - Update JavadocPropertyCustomizer.java
 - #2495 - Fix broken links in README and CONTRIBUTING
 - #2501 - bug fix when "exported" is set to false in RestResource annotation
-- #2447 - Serialization to openapi of org.springframework.data.domain.Sort is not done correctly
+- #2447 - Serialization to openapi of org.springframework.data.domain.Sort is not done
+  correctly
 - #2449 - Extensions in subobjects of OpenAPI no longer work
-- #2461 - Springdoc OpenApi Annotations @ExtensionProperty Not Evaluating Properties from application.yml
+- #2461 - Springdoc OpenApi Annotations @ExtensionProperty Not Evaluating Properties from
+  application.yml
 - #2469 - Pom contains invalid organizationUrl
 - #2518 - Duplicate GroupConfigs in SpringDocConfigProperties
-- #2506 - Springdoc breaks (Unexpected value: TRACE) when a spring-cloud-starter-gateway-mvc universal gateway is configured.
+- #2506 - Springdoc breaks (Unexpected value: TRACE) when a
+  spring-cloud-starter-gateway-mvc universal gateway is configured.
 - #2519 - Request parameter parsing error after using @NotBlank from type interface field
 - #2516 - Spring Data REST fails when setting version to openapi_3_1
 - #2509 - ArrayIndexOutOfBoundsException in SwaggerUiConfigParameters
 - #2484 - JavaDoc integration not working with SnakeCaseStrategy property naming
-- #2483 - Controller advice documents ApiResponse on every operation, even if the operation does not annotate the exception to be thrown
-- #2477 - buildApiResponses ignores produced ContentType in case of many @Operation 
+- #2483 - Controller advice documents ApiResponse on every operation, even if the
+  operation does not annotate the exception to be thrown
+- #2477 - buildApiResponses ignores produced ContentType in case of many @Operation
 
 ## [2.3.0] - 2023-12-03
 
 ### Added
 
 - #2340 - Add support OIDC with Spring Authorization Server
-- #2345 - Support Schema added in OpenAPI Specification v3.1 
-- #2387 - Support get javadoc description from getter method 
+- #2345 - Support Schema added in OpenAPI Specification v3.1
+- #2387 - Support get javadoc description from getter method
 - #2404 - Update condition to register links schema customizer
 - #2359 - Update condition to register links schema customizer
 - #2348 - Enhance resource path processing
@@ -61,21 +637,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - #2366 - Fix the failed test due to hardcoded file separators
-- #2370, #2371 - No empty description for polymorphic subtypes 
-- #2373 - SchemaProperty.array Schema is ignored in /api-docs or api-docs.yaml 
+- #2370, #2371 - No empty description for polymorphic subtypes
+- #2373 - SchemaProperty.array Schema is ignored in /api-docs or api-docs.yaml
 - #2366 - Refactoring AbstractSwaggerResourceResolver.findWebJarResourcePath
 - #2320 - javadoc for class attribute ignored when in EntityModel.
 - #2347 - Not working if a property of entity contains generic parameters.
-- #2399 - SpringdocRouteBuilder.onError is overriding last route defined. 
-- #2426 -  StackOverflowError when using @ParameterObject on groovy class.
+- #2399 - SpringdocRouteBuilder.onError is overriding last route defined.
+- #2426 - StackOverflowError when using @ParameterObject on groovy class.
 
 ## [2.2.0] - 2023-08-06
 
 ### Added
 
-- #2189 - Add support for swagger-ui.url property 
+- #2189 - Add support for swagger-ui.url property
 - #2200 - Support schema.requiredMode() on ParameterObject
-- #2309 - Added function to preload by specifying locale 
+- #2309 - Added function to preload by specifying locale
 - #2332 - Group name cannot be null or empty
 - #2281 - Initial Virtual thread support
 
@@ -87,17 +663,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- #2199 - Fix Schema get condition of ArraySchema. 
-- #2194 - Fix Swagger UI with provided spec 
-- #2213 - Using both generated and configured specs stoped working in 1.6.5 
+- #2199 - Fix Schema get condition of ArraySchema.
+- #2194 - Fix Swagger UI with provided spec
+- #2213 - Using both generated and configured specs stoped working in 1.6.5
 - #2222 - String Index Out of Bounce Exception Fix when deployed on Azure
-- #2243, #2235 - Fix StringIndexOutOfBoundsException when path is same webjar 
-- #2291 - Fix default-flat-param-object doesn't work when using http body 
-- #2310 - Change bean name of objectMapperProvider 
+- #2243, #2235 - Fix StringIndexOutOfBoundsException when path is same webjar
+- #2291 - Fix default-flat-param-object doesn't work when using http body
+- #2310 - Change bean name of objectMapperProvider
 - #2207 - swagger-initializer.js is sent endcoded in the JVM's default charset
--  #2271, #2280 - Fix loop when response inherits generic class fixes
+- #2271, #2280 - Fix loop when response inherits generic class fixes
 - #2312 - Spec for @ParameterObject disappears if building native-images
-- #2326 - @QuerydslPredicate(root = X.class) annotation at Controller Method level not getting documented in Spring Boot 3
+- #2326 - @QuerydslPredicate(root = X.class) annotation at Controller Method level not
+  getting documented in Spring Boot 3
 
 ## [2.1.0] - 2023-04-01
 
@@ -121,16 +698,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #2131 - Fixed a bug that javadoc of record class parameters was not recognized.
 - #2140 - Javadoc record class parameters not recognized
 - #2123 #2141 - fix spring authorization server response.
-- #2148 - Fix properties show-oauth2-endpoints and SpringDocConfigProperties#showOauth2Endpoint properties name mismatch
+- #2148 - Fix properties show-oauth2-endpoints and
+  SpringDocConfigProperties#showOauth2Endpoint properties name mismatch
 - #2149 - Request parameters with default values are marked as required.
 - #2155 - openApi.getServers() is null in OpenApiCustomiser when using different locales.
 - #2152 - Redundant(wrong) direction appended to @PageableDefault.
 - #2181 #2183 - Fixed DefaultFlatParamObject to work with annotated parameters.
-- #2170 #2187 - All request parameters marked as required for Java controllers in mixed projects in 2.0.3
+- #2170 #2187 - All request parameters marked as required for Java controllers in mixed
+  projects in 2.0.3
 - #2165 - Custom Converters are not excluded if not registered for Http Message Converter.
 - #2185 - Fix behaviour of required flag for schema class fields.
 - #2139 - SpringDocSecurityConfiguration class not sufficiently constrained.
-- #2142 - SpringDocJacksonModuleConfiguration is loaded even though there is no ObjectMapperProvider when springdoc.api-docs.enabled = false.
+- #2142 - SpringDocJacksonModuleConfiguration is loaded even though there is no
+  ObjectMapperProvider when springdoc.api-docs.enabled = false.
 
 ## [2.0.4] - 2023-03-15
 
@@ -152,6 +732,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #2054 - Add copyright and license information to Jar.
 - #2021 - Required field in Schema annotation ignored in Kotlin.
 - #2094 - Initial support for Spring Authorization Server.
+
 ### Changed
 
 - Upgrade spring-boot to 3.0.4
@@ -162,20 +743,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - #2010 - findByNameContainingIgnoreCaseAndDateBefore throw NullPointerException.
 - #2031 - Path variables parameters are not assigned correctly to endpoints.
-- #2038 - When extends JpaRepository, using @Parameter over the method results in duplicate of the same parameter.
+- #2038 - When extends JpaRepository, using @Parameter over the method results in
+  duplicate of the same parameter.
 - #2046 - Map Fields Disappear with Groovy on Classpath.
 - #2051 - Malformed api-docs JSON when StringHttpMessageConverter is not active
 - #2062 - OperationCustomizer is not working with Spring Data REST.
-- #2098 - When getting ExceptionHandler in the controller, use target class in case of AOP Proxy.
+- #2098 - When getting ExceptionHandler in the controller, use target class in case of AOP
+  Proxy.
 - #2107 - Ordering of GlobalOpenApiCustomizers different than for OpenApiCustomisers.
-- #2089 - Fixed a bug that a NullPointerException is thrown when the description field of RequestBody is null and there is a javadoc description.
+- #2089 - Fixed a bug that a NullPointerException is thrown when the description field of
+  RequestBody is null and there is a javadoc description.
 - #2104 - OpenAPI Extensions no longer work.
 
 ## [2.0.2] - 2022-12-16
 
 ### Fixed
 
-- #2008 -  Error when com.fasterxml.jackson.module.kotlin.KotlinModule is not present in classpath
+- #2008 - Error when com.fasterxml.jackson.module.kotlin.KotlinModule is not present in
+  classpath
 
 ## [2.0.1] - 2022-12-16
 
@@ -188,7 +773,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - #1957 - AdditionalModelsConverter Schema params rewriting
 - #1962 - override-with-generic-response shouldn't shallow copy
-- #1985 - IllegalStateException: Duplicate key when two endpoints at the same URL with same header exist
+- #1985 - IllegalStateException: Duplicate key when two endpoints at the same URL with
+  same header exist
 - #1992 - Java enumeration and Spring Converter no longer generates enum drop-down
 - #2001 - Enum Collection parameter missing type info in Spring Data Rest search method
 - #1961 - ContinuationObject leaks into schema
@@ -200,6 +786,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #1284 - Add support for Jakarta EE
 
 ### What's Changed
+
 - Upgrade spring-boot to v3.0.0
 
 ## [2.0.0-RC2] - 2022-11-20
@@ -208,7 +795,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - #1929 - Enables no cache on not cache swagger-initializer.js
 - #1922 - Check existence of superclass before accessing its name
-- #1923 - Javadoc description of the @RequestPart param of multipart/form-data to the parameter description
+- #1923 - Javadoc description of the @RequestPart param of multipart/form-data to the
+  parameter description
+
 ### Changed
 
 - Upgrade spring-boot to 3.0.0-RC2
@@ -219,10 +808,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - #1892 - springdoc.model-and-view-allowed enhanced
-- #1901 - When @Get, using @Parameter over the method results in duplicate of the same parameter
+- #1901 - When @Get, using @Parameter over the method results in duplicate of the same
+  parameter
 - #1909 - ExceptionHandler in controller is not used by another controller
-- #1904 - springdoc-openapi-webflux-ui 2.0.0-M7 + spring actuator + spring cloud crashes at startup
-- #1911 - Wrong type for springdoc.swagger-ui.oauth.useBasicAuthenticationWithAccessCodeGrant configuration property
+- #1904 - springdoc-openapi-webflux-ui 2.0.0-M7 + spring actuator + spring cloud crashes
+  at startup
+- #1911 - Wrong type for
+  springdoc.swagger-ui.oauth.useBasicAuthenticationWithAccessCodeGrant configuration
+  property
 - #1931 - Spring Security form login only offers application/json req body type.
 
 ## [2.0.0-RC1] - 2022-10-23

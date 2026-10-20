@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -24,12 +26,12 @@
 
 package org.springdoc.core.utils;
 
-import org.springframework.util.ResourceUtils;
-
 import static org.springframework.util.AntPathMatcher.DEFAULT_PATH_SEPARATOR;
+import static org.springframework.util.ResourceUtils.CLASSPATH_URL_PREFIX;
 
 /**
  * The type Constants.
+ *
  * @author bnasslahsen
  */
 public final class Constants {
@@ -38,6 +40,11 @@ public final class Constants {
 	 * The constant SPRINGDOC_PREFIX.
 	 */
 	public static final String SPRINGDOC_PREFIX = "springdoc";
+
+	/**
+	 * The constant SPRINGDOC_SWAGGER_PREFIX.
+	 */
+	public static final String SPRINGDOC_SWAGGER_PREFIX = SPRINGDOC_PREFIX + ".swagger-ui";
 
 	/**
 	 * The constant DEFAULT_API_DOCS_URL.
@@ -62,7 +69,7 @@ public final class Constants {
 	/**
 	 * The constant SWAGGER_CONFIG_URL.
 	 */
-	public static final String SWAGGER_CONFIG_URL = API_DOCS_URL + DEFAULT_PATH_SEPARATOR + SWAGGER_CONFIG_FILE;
+	public static final String SWAGGER_CONFIG_URL = API_DOCS_URL + "/" + SWAGGER_CONFIG_FILE;
 
 	/**
 	 * The constant YAML.
@@ -100,14 +107,14 @@ public final class Constants {
 	public static final String SPRINGDOC_POLYMORPHIC_CONVERTER_ENABLED = "springdoc.model-converters.polymorphic-converter.enabled";
 
 	/**
+	 * The constant SPRINGDOC_KOTLIN_NULLABLE_PROPERTY_CUSTOMIZER_ENABLED.
+	 */
+	public static final String SPRINGDOC_KOTLIN_NULLABLE_PROPERTY_CUSTOMIZER_ENABLED = "springdoc.model-converters.kotlin-nullable-property-customizer.enabled";
+
+	/**
 	 * The constant SPRINGDOC_SCHEMA_RESOLVE_PROPERTIES.
 	 */
 	public static final String SPRINGDOC_SCHEMA_RESOLVE_PROPERTIES = "springdoc.api-docs.resolve-schema-properties";
-
-	/**
-	 * The constant SPRINGDOC_SPEC_PROPERTIES_PREFIX.
-	 */
-	public static final String SPRINGDOC_SPEC_PROPERTIES_PREFIX = "springdoc.spec-properties.";
 
 	/**
 	 * The constant SPRINGDOC_SHOW_LOGIN_ENDPOINT.
@@ -174,26 +181,35 @@ public final class Constants {
 	 */
 	public static final String SPRINGDOC_ACTUATOR_DOC_DESCRIPTION = "Spring Boot Actuator Web API Documentation";
 
-	/**
-	 * The constant DEFAULT_WEB_JARS_PREFIX_URL.
-	 */
-	public static final String DEFAULT_WEB_JARS_PREFIX_URL = "/webjars";
+    /**
+     * The constant CLASSPATH_RESOURCE_LOCATION.
+     */
+    public static final String CLASSPATH_RESOURCE_LOCATION = CLASSPATH_URL_PREFIX + "META-INF" + DEFAULT_PATH_SEPARATOR + "resources" + DEFAULT_PATH_SEPARATOR;
 
-	/**
-	 * The constant CLASSPATH_RESOURCE_LOCATION.
-	 */
-	public static final String CLASSPATH_RESOURCE_LOCATION = ResourceUtils.CLASSPATH_URL_PREFIX + "/META-INF/resources";
+    /**
+     * The constant WEBJARS_RESOURCE_LOCATION.
+     */
+    public static final String WEBJARS_RESOURCE_LOCATION = CLASSPATH_RESOURCE_LOCATION + "webjars" + DEFAULT_PATH_SEPARATOR;
 
+    /**
+     * The constant SWAGGER_UI_WEBJAR_NAME.
+     */
+    public static final String SWAGGER_UI_WEBJAR_NAME = "swagger-ui";
 
 	/**
 	 * The constant SWAGGER_UI_PREFIX.
 	 */
-	public static final String SWAGGER_UI_PREFIX = "/swagger-ui";
+	public static final String SWAGGER_UI_PREFIX = "/" + SWAGGER_UI_WEBJAR_NAME;
 
 	/**
 	 * The constant INDEX_PAGE.
 	 */
 	public static final String INDEX_PAGE = "/index.html";
+
+	/**
+	 * The constant INDEX_PAGE_PATTERN.
+	 */
+	public static final String INDEX_PAGE_PATTERN = "/*index.html";
 
 	/**
 	 * The constant SWAGGER_UI_URL.
@@ -228,7 +244,7 @@ public final class Constants {
 	/**
 	 * The constant DEFAULT_SWAGGER_UI_PATH.
 	 */
-	public static final String DEFAULT_SWAGGER_UI_PATH = DEFAULT_PATH_SEPARATOR + "swagger-ui.html";
+	public static final String DEFAULT_SWAGGER_UI_PATH = "/swagger-ui.html";
 
 	/**
 	 * The constant SWAGGER_UI_PATH.
@@ -360,6 +376,21 @@ public final class Constants {
 	 */
 	public static final String ALL_PATTERN = "/**";
 
+    /**
+     * The constant SWAGGER_UI_WEBJAR_NAME_PATTERN.
+     */
+    public static final String SWAGGER_UI_WEBJAR_NAME_PATTERN = "/*" + SWAGGER_UI_WEBJAR_NAME;
+
+    /**
+     * The constant SWAGGER_INITIALIZER_PATTERN.
+     */
+    public static final String SWAGGER_INITIALIZER_PATTERN = "/*" + SWAGGER_INITIALIZER_JS;
+
+	/**
+	 * The constant SWAGGER_RESOURCE_CACHE_NAME.
+	 */
+	public static final String SWAGGER_RESOURCE_CACHE_NAME = "swagger-resource-chain-cache";
+
 	/**
 	 * The constant HEALTH_PATTERN.
 	 */
@@ -394,7 +425,7 @@ public final class Constants {
 	/**
 	 * The constant DEFAULT_YAML_API_DOCS_ACTUATOR_PATH.
 	 */
-	public static final String DEFAULT_YAML_API_DOCS_ACTUATOR_PATH = DEFAULT_PATH_SEPARATOR + YAML;
+	public static final String DEFAULT_YAML_API_DOCS_ACTUATOR_PATH = "/" + YAML;
 
 	/**
 	 * The constant ACTUATOR_DEFAULT_GROUP.
@@ -404,7 +435,12 @@ public final class Constants {
 	/**
 	 * The constant LINKS_SCHEMA_CUSTOMISER.
 	 */
-	public static final String LINKS_SCHEMA_CUSTOMISER = "linksSchemaCustomizer";
+	public static final String LINKS_SCHEMA_CUSTOMIZER = "linksSchemaCustomizer";
+
+	/**
+	 * The constant GLOBAL_OPEN_API_CUSTOMIZER.
+	 */
+	public static final String GLOBAL_OPEN_API_CUSTOMIZER = "globalOpenApiCustomizer";
 
 	/**
 	 * The constant SPRINGDOC_SORT_CONVERTER_ENABLED.
@@ -415,6 +451,27 @@ public final class Constants {
 	 * The constant SPRINGDOC_NULLABLE_REQUEST_PARAMETER_ENABLED.
 	 */
 	public static final String SPRINGDOC_NULLABLE_REQUEST_PARAMETER_ENABLED = "springdoc.nullable-request-parameter-enabled";
+
+	/**
+	 * The constant SPRINGDOC_DEFAULT_FLAT_PARAM_OBJECT.
+	 */
+	public static final String SPRINGDOC_DEFAULT_FLAT_PARAM_OBJECT = "springdoc.default-flat-param-object";
+
+	/**
+	 * The constant SPRINGDOC_ENABLE_ADDITIONAL_SCHEMAS_RESOLUTION.
+	 */
+	public static final String SPRINGDOC_ENABLE_EXTRA_SCHEMAS = "springdoc.enable-extra-schemas";
+
+	/**
+	 * The constant SPRINGDOC_EXPLICIT_OBJECT_SCHEMA.
+	 */
+	public static final String SPRINGDOC_EXPLICIT_OBJECT_SCHEMA = "springdoc.explicit-object-schema";
+
+	/**
+	 * The constant SCALAR_ENABLED.
+	 */
+	public static final String SCALAR_ENABLED= "scalar.enabled";
+	
 	/**
 	 * Instantiates a new Constants.
 	 */

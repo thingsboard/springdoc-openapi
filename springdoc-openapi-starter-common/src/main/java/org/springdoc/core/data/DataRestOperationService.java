@@ -3,19 +3,21 @@
  *  *
  *  *  *
  *  *  *  *
- *  *  *  *  * Copyright 2019-2022 the original author or authors.
  *  *  *  *  *
- *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  *  *  *  * you may not use this file except in compliance with the License.
- *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  * Copyright 2019-2026 the original author or authors.
+ *  *  *  *  *  *
+ *  *  *  *  *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  *  *  *  * you may not use this file except in compliance with the License.
+ *  *  *  *  *  * You may obtain a copy of the License at
+ *  *  *  *  *  *
+ *  *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
+ *  *  *  *  *  *
+ *  *  *  *  *  * Unless required by applicable law or agreed to in writing, software
+ *  *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  *  *  *  * See the License for the specific language governing permissions and
+ *  *  *  *  *  * limitations under the License.
  *  *  *  *  *
- *  *  *  *  *      https://www.apache.org/licenses/LICENSE-2.0
- *  *  *  *  *
- *  *  *  *  * Unless required by applicable law or agreed to in writing, software
- *  *  *  *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  *  *  *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  *  *  *  * See the License for the specific language governing permissions and
- *  *  *  *  * limitations under the License.
  *  *  *  *
  *  *  *
  *  *
@@ -59,6 +61,7 @@ import org.springframework.web.method.HandlerMethod;
 
 /**
  * The type Data rest operation builder.
+ *
  * @author bnasslahsen
  */
 public class DataRestOperationService {
@@ -96,10 +99,10 @@ public class DataRestOperationService {
 	/**
 	 * Instantiates a new Data rest operation builder.
 	 *
-	 * @param dataRestRequestService the data rest request builder
-	 * @param tagsBuilder the tags builder
+	 * @param dataRestRequestService  the data rest request builder
+	 * @param tagsBuilder             the tags builder
 	 * @param dataRestResponseService the data rest response builder
-	 * @param operationService the operation service
+	 * @param operationService        the operation service
 	 */
 	public DataRestOperationService(DataRestRequestService dataRestRequestService, DataRestTagsService tagsBuilder,
 			DataRestResponseService dataRestResponseService, OperationService operationService) {
@@ -110,17 +113,17 @@ public class DataRestOperationService {
 	}
 
 	/**
-	 * Build operation operation.
+	 * Build operation.
 	 *
-	 * @param handlerMethod the handler method
-	 * @param dataRestRepository the repository data rest
-	 * @param openAPI the open api
-	 * @param requestMethod the request method
-	 * @param operationPath the operation path
-	 * @param methodAttributes the method attributes
-	 * @param resourceMetadata the resource metadata
+	 * @param handlerMethod         the handler method
+	 * @param dataRestRepository    the repository data rest
+	 * @param openAPI               the open api
+	 * @param requestMethod         the request method
+	 * @param operationPath         the operation path
+	 * @param methodAttributes      the method attributes
+	 * @param resourceMetadata      the resource metadata
 	 * @param methodResourceMapping the method resource mapping
-	 * @param controllerType the controller type
+	 * @param controllerType        the controller type
 	 * @return the operation
 	 */
 	public Operation buildOperation(HandlerMethod handlerMethod, DataRestRepository dataRestRepository,
@@ -141,15 +144,15 @@ public class DataRestOperationService {
 	}
 
 	/**
-	 * Build entity operation operation.
+	 * Build entity operation.
 	 *
-	 * @param handlerMethod the handler method
+	 * @param handlerMethod      the handler method
 	 * @param dataRestRepository the repository data rest
-	 * @param openAPI the open api
-	 * @param requestMethod the request method
-	 * @param operationPath the operation path
-	 * @param methodAttributes the method attributes
-	 * @param resourceMetadata the resource metadata
+	 * @param openAPI            the open api
+	 * @param requestMethod      the request method
+	 * @param operationPath      the operation path
+	 * @param methodAttributes   the method attributes
+	 * @param resourceMetadata   the resource metadata
 	 * @return the operation
 	 */
 	private Operation buildEntityOperation(HandlerMethod handlerMethod, DataRestRepository dataRestRepository,
@@ -168,15 +171,15 @@ public class DataRestOperationService {
 	}
 
 	/**
-	 * Build search operation operation.
+	 * Build search operation.
 	 *
-	 * @param handlerMethod the handler method
-	 * @param dataRestRepository the repository data rest
-	 * @param openAPI the open api
-	 * @param requestMethod the request method
-	 * @param methodAttributes the method attributes
+	 * @param handlerMethod         the handler method
+	 * @param dataRestRepository    the repository data rest
+	 * @param openAPI               the open api
+	 * @param requestMethod         the request method
+	 * @param methodAttributes      the method attributes
 	 * @param methodResourceMapping the method resource mapping
-	 * @param resourceMetadata the resource metadata
+	 * @param resourceMetadata      the resource metadata
 	 * @return the operation
 	 */
 	private Operation buildSearchOperation(HandlerMethod handlerMethod, DataRestRepository dataRestRepository,
@@ -199,7 +202,9 @@ public class DataRestOperationService {
 			HandlerMethod repositoryHandlerMethod = new HandlerMethod(methodResourceMapping.getMethod().getDeclaringClass(), methodResourceMapping.getMethod());
 			MethodParameter[] parameters = repositoryHandlerMethod.getMethodParameters();
 			for (MethodParameter methodParameter : parameters) {
-				dataRestRequestService.buildCommonParameters(openAPI, requestMethod, methodAttributes, operation, new String[] { methodParameter.getParameterName() }, new MethodParameter[] { methodParameter }, dataRestRepository);
+				Param paramAnnotation = methodParameter.getParameterAnnotation(Param.class);
+				String paramName = (paramAnnotation != null) ? paramAnnotation.value() : methodParameter.getParameterName();
+				dataRestRequestService.buildCommonParameters(openAPI, requestMethod, methodAttributes, operation, new String[] { paramName }, new MethodParameter[] { methodParameter }, dataRestRepository);
 			}
 		}
 
@@ -207,14 +212,13 @@ public class DataRestOperationService {
 			String pName = parameterMetadatum.getName();
 			ResourceDescription description = parameterMetadatum.getDescription();
 			if (description instanceof TypedResourceDescription) {
-				Type type = getParameterType(pName,method,description);
+				Type type = getParameterType(pName, method, description);
 				Schema<?> schema = SpringDocAnnotationsUtils.extractSchema(openAPI.getComponents(), type, null, null, openAPI.getSpecVersion());
 				Parameter parameter = getParameterFromAnnotations(openAPI, methodAttributes, method, pName);
 				if (parameter == null) {
 					parameter = new Parameter().name(pName).in(ParameterIn.QUERY.toString()).schema(schema);
-					operation.addParametersItem(parameter);
 				}
-				else if (CollectionUtils.isEmpty(operation.getParameters()))
+				if (CollectionUtils.isEmpty(operation.getParameters()))
 					operation.addParametersItem(parameter);
 				else
 					GenericParameterService.mergeParameter(operation.getParameters(), parameter);
@@ -235,8 +239,8 @@ public class DataRestOperationService {
 	/**
 	 * Gets parameter type.
 	 *
-	 * @param pName the p name
-	 * @param method the method
+	 * @param pName       the p name
+	 * @param method      the method
 	 * @param description the description
 	 * @return the parameter type
 	 */
@@ -245,7 +249,7 @@ public class DataRestOperationService {
 		java.lang.reflect.Parameter[] parameters = method.getParameters();
 		for (int i = 0; i < parameters.length; i++) {
 			java.lang.reflect.Parameter parameter = parameters[i];
-			if (pName.equals(parameter.getName()) || (parameter.getAnnotation(Param.class)!=null && pName.equals(parameter.getAnnotation(Param.class).value()))) {
+			if (pName.equals(parameter.getName()) || (parameter.getAnnotation(Param.class) != null && pName.equals(parameter.getAnnotation(Param.class).value()))) {
 				ResolvableType resolvableType = ResolvableType.forMethodParameter(method, i);
 				type = resolvableType.getType();
 				break;
@@ -268,10 +272,10 @@ public class DataRestOperationService {
 	/**
 	 * Update parameter from annotations parameter.
 	 *
-	 * @param openAPI the open api
+	 * @param openAPI          the open api
 	 * @param methodAttributes the method attributes
-	 * @param method the method
-	 * @param pName the p name
+	 * @param method           the method
+	 * @param pName            the p name
 	 * @return the parameter
 	 */
 	private Parameter getParameterFromAnnotations(OpenAPI openAPI, MethodAttributes methodAttributes, Method method, String pName) {
@@ -292,10 +296,10 @@ public class DataRestOperationService {
 	}
 
 	/**
-	 * Init operation operation.
+	 * Init operation.
 	 *
 	 * @param handlerMethod the handler method
-	 * @param domainType the domain type
+	 * @param domainType    the domain type
 	 * @param requestMethod the request method
 	 * @return the operation
 	 */
@@ -313,38 +317,28 @@ public class DataRestOperationService {
 
 	/**
 	 * Add operation description.
-	 * @param operation the operation
-	 * @param requestMethod the request method
-	 * @param entity the entity
+	 *
+	 * @param operation          the operation
+	 * @param requestMethod      the request method
+	 * @param entity             the entity
 	 * @param dataRestRepository the data rest repository
 	 */
 	private void addOperationDescription(Operation operation, RequestMethod requestMethod, String entity, DataRestRepository dataRestRepository) {
 		switch (requestMethod) {
-			case GET:
-				operation.setDescription(createDescription("get-", entity, dataRestRepository));
-				break;
-			case POST:
-				operation.setDescription(createDescription("create-", entity, dataRestRepository));
-				break;
-			case DELETE:
-				operation.setDescription(createDescription("delete-", entity, dataRestRepository));
-				break;
-			case PUT:
-				operation.setDescription(createDescription("update-", entity, dataRestRepository));
-				break;
-			case PATCH:
-				operation.setDescription(createDescription("patch-", entity, dataRestRepository));
-				break;
-			default:
-				throw new IllegalArgumentException(requestMethod.name());
+			case GET -> operation.setDescription(createDescription("get-", entity, dataRestRepository));
+			case POST -> operation.setDescription(createDescription("create-", entity, dataRestRepository));
+			case DELETE -> operation.setDescription(createDescription("delete-", entity, dataRestRepository));
+			case PUT -> operation.setDescription(createDescription("update-", entity, dataRestRepository));
+			case PATCH -> operation.setDescription(createDescription("patch-", entity, dataRestRepository));
+			default -> throw new IllegalArgumentException(requestMethod.name());
 		}
 	}
 
 	/**
 	 * Create description.
 	 *
-	 * @param action the action
-	 * @param entity the entity
+	 * @param action             the action
+	 * @param entity             the entity
 	 * @param dataRestRepository the data rest repository
 	 * @return the string
 	 */
